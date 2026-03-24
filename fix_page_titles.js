@@ -4,8 +4,11 @@
  */
 (function() {
     // Leave this blank "" to use your existing base title (Agency Name) by default
-    const BASE_TITLE = ""; 
+    const BASE_TITLE = ""; // Override this with a custom base title if desired, otherwise it will use the original page title as the base
     const SEPARATOR = " » ";
+    const SHOW_AGENCY_NAME = true; // Set to false to hide the agency base name from the title entirely (only show sub-account and menu item)
+    const SHOW_SUB_ACCOUNT = true; // Set to false to hide the sub-account name from the title entirely (only show agency name and menu item)
+    const SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW = true; // When in Agency view, show the word "Agency" as the "sub-account" to provide context on which account you're in (since the menu item alone can be ambiguous in this view)
     
     // Capture the original title on page load to use as the default base
     // If the title already has separators, we only take the first part
@@ -33,8 +36,10 @@
         }
 
         if (name) {
-            // Ignore placeholder text when in Agency view
-            if (name.toLowerCase().includes('click here to switch')) return null;
+            // Check for placeholder text when in Agency view
+            if (name.toLowerCase().includes('click here to switch')) {
+                return SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW ? "Agency" : null;
+            }
             return name;
         }
         return null;
@@ -62,10 +67,14 @@
         const subAccountText = getSubAccountName();
         const currentBaseTitle = getBaseTitle();
         
-        let parts = [currentBaseTitle];
+        let parts = [];
         
-        // Append sub-account if it exists and doesn't match the base title
-        if (subAccountText && subAccountText.length > 0 && subAccountText !== currentBaseTitle) {
+        if (SHOW_AGENCY_NAME && currentBaseTitle && currentBaseTitle.length > 0) {
+            parts.push(currentBaseTitle);
+        }
+        
+        // Append sub-account if enabled, exists, and doesn't match the base title
+        if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText.length > 0 && subAccountText !== currentBaseTitle) {
             parts.push(subAccountText);
         }
         
