@@ -4,7 +4,7 @@
  */
 (function() {
     // Leave this blank "" to use your existing base title (Agency Name) by default
-    const BASE_TITLE = ""; // Override this with a custom base title if desired, otherwise it will use the original page title as the base
+    const BASE_TITLE = "AMB"; // Override this with a custom base title if desired, otherwise it will use the original page title as the base
     const SEPARATOR = " » ";
     const SHOW_AGENCY_NAME = true; // Set to false to hide the agency base name from the title entirely (only show sub-account and menu item)
     const SHOW_SUB_ACCOUNT = true; // Set to false to hide the sub-account name from the title entirely (only show agency name and menu item)
