@@ -1,25 +1,19 @@
-/* fix_page_titles.js – version that only uses the URL ID */
-(() => {
-    const BASE_TITLE = window.BASE_TITLE || 'AMB';
-    const SEPARATOR  = ' » ';
-    const SHOW_AGENCY_NAME = true;
-    const SHOW_SUB_ACCOUNT = true;
-    const SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW = true;
-
-    // -----------------------------------------------------------------
-    // Helper: safe HTML‑escape a string
-    // -----------------------------------------------------------------
-    function sanitizeForTitle(raw) {
-        if (!raw) return '';
-        const div = document.createElement('div');
-        div.textContent = raw;          // forces HTML‑escaping
-        return div.innerHTML;
-    }
-
-    // -----------------------------------------------------------------
-    // Existing helpers (unchanged – they are used for the normal pages)
-    // -----------------------------------------------------------------
+/**
+ * Custom JS to dynamically update the GoHighLevel Page Title
+ * Format: "[ BASE TITLE ] » [ SELECTED SUB ACCOUNT ] » [ SELECTED MENU ITEM ]"
+ */
+(function() {
+    // Leave this blank "" to use your existing base title (Agency Name) by default
+    const BASE_TITLE = "AMB"; // Override this with a custom base title if desired, otherwise it will use the original page title as the base
+    const SEPARATOR = " » ";
+    const SHOW_AGENCY_NAME = true; // Set to false to hide the agency base name from the title entirely (only show sub-account and menu item)
+    const SHOW_SUB_ACCOUNT = true; // Set to false to hide the sub-account name from the title entirely (only show agency name and menu item)
+    const SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW = true; // When in Agency view, show the word "Agency" as the "sub-account" to provide context on which account you're in (since the menu item alone can be ambiguous in this view)
+    
+    // Capture the original title on page load to use as the default base
+    // If the title already has separators, we only take the first part
     const ORIGINAL_TITLE = document.title.split(SEPARATOR)[0].trim();
+    
     let isUpdatingTitle = false;
 
     function getBaseTitle() {
@@ -27,19 +21,24 @@
     }
 
     function getSubAccountName() {
-        const nameSpan = document.getElementById('tb_location-switcher-v2-company-title');
+        let nameSpan = document.getElementById('tb_location-switcher-v2-company-title');
         let name = null;
-        if (nameSpan) name = nameSpan.textContent.trim();
-        else {
-            const switcherDiv = document.getElementById('location-switcher-sidbar-v2');
+        
+        if (nameSpan) {
+            name = nameSpan.textContent.trim();
+        } else {
+            // Fallback if ID is missing but structure remains
+            let switcherDiv = document.getElementById('location-switcher-sidbar-v2');
             if (switcherDiv) {
-                const fallback = switcherDiv.querySelector('.truncate, .hl_text-overflow');
-                if (fallback) name = fallback.textContent.trim();
+                let fallbackSpan = switcherDiv.querySelector('.truncate, .hl_text-overflow');
+                if (fallbackSpan) name = fallbackSpan.textContent.trim();
             }
         }
+
         if (name) {
+            // Check for placeholder text when in Agency view
             if (name.toLowerCase().includes('click here to switch')) {
-                return SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW ? 'Agency' : null;
+                return SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW ? "Agency" : null;
             }
             return name;
         }
@@ -47,112 +46,103 @@
     }
 
     function getActiveMenuText() {
-        const link = document.querySelector('aside a.exact-active, nav a.exact-active, .sidebar a.exact-active');
-        if (!link) return null;
-        const span = link.querySelector('span.nav-title');
-        return span ? span.textContent.trim() : link.textContent.trim();
+        // Find the active menu link inside the sidebar or navigation area
+        let activeLink = document.querySelector('aside a.exact-active, nav a.exact-active, .sidebar a.exact-active');
+        
+        if (activeLink) {
+            // GHL usually wraps the menu text in a span with the class 'nav-title'
+            let titleSpan = activeLink.querySelector('span.nav-title');
+            if (titleSpan) {
+                return titleSpan.textContent.trim();
+            }
+            
+            // Fallback if 'nav-title' span isn't found
+            return activeLink.textContent.trim();
+        }
+        return null;
     }
 
-    // -----------------------------------------------------------------
-    // Title‑building function
-    // -----------------------------------------------------------------
     function updateTitle() {
-        // -------------------------------------------------------------
-        // EDITOR PAGE (page‑builder) – special handling
-        // -------------------------------------------------------------
-        if (window.location.href.includes('page-builder')) {
-            // ---- 1️⃣  Extract the location‑ID from the URL ----
-            // URL pattern: …/location/<ID>/…
-            const parts = window.location.pathname.split('/');
-            const locIdx = parts.indexOf('location');
-            let rawName = '';
-            if (locIdx !== -1 && parts[locIdx + 1]) {
-                // Use the ID as a fallback name; you can replace this with a fetch call later
-                rawName = parts[locIdx + 1];
-            }
-
-            // ---- 2️⃣  OPTIONAL: fetch a friendly name from a tiny endpoint ----
-            // Uncomment the block below and replace `https://example.com/api/name?id=` with your own service.
-            /*
-            fetch(`https://example.com/api/name?id=${encodeURIComponent(rawName)}`)
-                .then(r => r.json())
-                .then(data => {
-                    const friendly = data && data.name ? data.name : rawName;
-                    applyTitle(friendly);
-                })
-                .catch(() => applyTitle(rawName));
-            return; // exit; the async fetch will call applyTitle later
-            */
-
-            // ---- 3️⃣  If you don’t have an API, just use the ID (or you can hard‑code a map) ----
-            applyTitle(rawName);
-            return; // stop the normal flow for the editor page
-        }
-
-        // -------------------------------------------------------------
-        // NON‑EDITOR PAGES – keep the original behaviour
-        // -------------------------------------------------------------
         const menuText = getActiveMenuText();
         const subAccountText = getSubAccountName();
-        const base = getBaseTitle();
+        const currentBaseTitle = getBaseTitle();
+        
+        let parts = [];
+        
+        if (SHOW_AGENCY_NAME && currentBaseTitle && currentBaseTitle.length > 0) {
+            parts.push(currentBaseTitle);
+        }
+        
+        // Append sub-account if enabled, exists, and doesn't match the base title
+        if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText.length > 0 && subAccountText !== currentBaseTitle) {
+            parts.push(subAccountText);
+        }
+        
+        if (menuText && menuText.length > 0) {
+            parts.push(menuText);
+        }
+        
+        let newTitle = parts.join(SEPARATOR);
 
-        const parts = [];
-        if (SHOW_AGENCY_NAME && base) parts.push(base);
-        if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText !== base) parts.push(subAccountText);
-        if (menuText) parts.push(menuText);
-
-        const newTitle = parts.join(SEPARATOR);
+        // Only update if it's different to prevent browser lag
         if (document.title !== newTitle) {
             isUpdatingTitle = true;
             document.title = newTitle;
-            setTimeout(() => { isUpdatingTitle = false; }, 50);
+            
+            // Allow a tiny window for the DOM to process the title change 
+            // before we accept external changes again
+            setTimeout(function() {
+                isUpdatingTitle = false;
+            }, 50);
         }
     }
 
-    // Helper that actually writes the title (used for both sync and async paths)
-    function applyTitle(name) {
-        const safe = name ? sanitizeForTitle(name) : 'Unknown';
-        const newTitle = `${BASE_TITLE} » ${safe} » Web Editor`;
-        if (document.title !== newTitle) {
-            isUpdatingTitle = true;
-            document.title = newTitle;
-            setTimeout(() => { isUpdatingTitle = false; }, 50);
-        }
-    }
-
-    // -----------------------------------------------------------------
-    // Run the update a few times (covers async loads) and set up observers
-    // -----------------------------------------------------------------
     function triggerUpdates() {
         setTimeout(updateTitle, 100);
         setTimeout(updateTitle, 500);
         setTimeout(updateTitle, 1000);
-        setTimeout(updateTitle, 2500);
+        setTimeout(updateTitle, 2500); // Extra time for sub-account data load
     }
 
+    // 1. Run initially on page load
     triggerUpdates();
 
-    const titleEl = document.querySelector('title');
-    if (titleEl) {
-        const obs = new MutationObserver(() => {
+    // 2. Observe changes to the <title> element
+    // This catches GoHighLevel's router trying to reset the title during navigation
+    const titleElement = document.querySelector('title');
+    if (titleElement) {
+        const titleObserver = new MutationObserver(function() {
+            // Ignore mutations caused by our own script
             if (isUpdatingTitle) return;
+            
             updateTitle();
+            
+            // The DOM active classes sometimes update a few milliseconds after the title changes,
+            // so we queue a few follow-up checks.
             setTimeout(updateTitle, 100);
             setTimeout(updateTitle, 500);
         });
-        obs.observe(titleEl, { childList: true, characterData: true, subtree: true });
+        
+        // Start observing text changes inside the <title> tag
+        titleObserver.observe(titleElement, { childList: true, characterData: true, subtree: true });
     }
 
+    // 3. Listen for ALL clicks on the document to catch sub-account switching
     document.addEventListener('click', triggerUpdates);
-    const push = history.pushState;
-    history.pushState = function () {
-        push.apply(this, arguments);
+
+    // 4. Hook into SPA History API to catch routing transitions
+    const originalPushState = history.pushState;
+    history.pushState = function() {
+        originalPushState.apply(this, arguments);
         triggerUpdates();
     };
-    const replace = history.replaceState;
-    history.replaceState = function () {
-        replace.apply(this, arguments);
+    
+    const originalReplaceState = history.replaceState;
+    history.replaceState = function() {
+        originalReplaceState.apply(this, arguments);
         triggerUpdates();
     };
+    
     window.addEventListener('popstate', triggerUpdates);
+
 })();
