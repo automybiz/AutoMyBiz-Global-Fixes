@@ -1,55 +1,176 @@
-/* fix_page_titles.js
- *
- * This script reads the `business_name` query‑string parameter that you
- * inject from the GoHighLevel Agency Whitelabel page, sanitises it,
- * and then builds a title of the form:
- *
- *     BASE_TITLE » <Business Name> » Web Editor
- *
- * It only runs on pages whose URL contains “page-builder”, so it won’t
- * affect any other part of the site.
+/**
+ * Custom JS to dynamically update the GoHighLevel Page Title
+ * Format: "[ BASE TITLE ] » [ SELECTED SUB ACCOUNT ] » [ SELECTED MENU ITEM ]"
  */
+(function() {
+    // Leave this blank "" to use your existing base title (Agency Name) by default
+    const BASE_TITLE = "AMB"; // Override this with a custom base title if desired, otherwise it will use the original page title as the base
+    const SEPARATOR = " » ";
+    const SHOW_AGENCY_NAME = true; // Set to false to hide the agency base name from the title entirely (only show sub-account and menu item)
+    const SHOW_SUB_ACCOUNT = true; // Set to false to hide the sub-account name from the title entirely (only show agency name and menu item)
+    const SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW = true; // When in Agency view, show the word "Agency" as the "sub-account" to provide context on which account you're in (since the menu item alone can be ambiguous in this view)
+    
+    // Capture the original title on page load to use as the default base
+    // If the title already has separators, we only take the first part
+    const ORIGINAL_TITLE = document.title.split(SEPARATOR)[0].trim();
+    
+    let isUpdatingTitle = false;
 
-(() => {
-    // -----------------------------------------------------------------
-    // 1️⃣  Bail out early if we are not on the editor page.
-    // -----------------------------------------------------------------
-    if (!window.location.href.includes('page-builder')) {
-        return;   // nothing to do on non‑editor pages
+    function getBaseTitle() {
+        return BASE_TITLE && BASE_TITLE.trim().length > 0 ? BASE_TITLE.trim() : ORIGINAL_TITLE;
     }
 
-    // -----------------------------------------------------------------
-    // 2️⃣  Grab the base title (you can set this elsewhere if you prefer)
-    // -----------------------------------------------------------------
-    // If the page already defines a global `BASE_TITLE`, use it;
-    // otherwise default to 'AMB'.
-    const BASE_TITLE = window.BASE_TITLE || 'AMB';
+    function getSubAccountName() {
+        let nameSpan = document.getElementById('tb_location-switcher-v2-company-title');
+        let name = null;
+        
+        if (nameSpan) {
+            name = nameSpan.textContent.trim();
+        } else {
+            // Fallback if ID is missing but structure remains
+            let switcherDiv = document.getElementById('location-switcher-sidbar-v2');
+            if (switcherDiv) {
+                let fallbackSpan = switcherDiv.querySelector('.truncate, .hl_text-overflow');
+                if (fallbackSpan) name = fallbackSpan.textContent.trim();
+            }
+        }
 
-    // -----------------------------------------------------------------
-    // 3️⃣  Parse the query‑string and fetch the business name.
-    // -----------------------------------------------------------------
-    const params = new URLSearchParams(window.location.search);
-    const rawName = params.get('business_name')?.trim() ?? '';
-
-    // -----------------------------------------------------------------
-    // 4️⃣  Simple sanitisation – escape any HTML characters.
-    // -----------------------------------------------------------------
-    function htmlEscape(str) {
-        const div = document.createElement('div');
-        div.textContent = str;   // forces HTML‑escaping
-        return div.innerHTML;
+        if (name) {
+            // Check for placeholder text when in Agency view
+            if (name.toLowerCase().includes('click here to switch')) {
+                return SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW ? "Agency" : null;
+            }
+            return name;
+        }
+        return null;
     }
-    const safeName = rawName ? htmlEscape(rawName) : 'Unknown';
 
-    // -----------------------------------------------------------------
-    // 5️⃣  Build and apply the new title.
-    // -----------------------------------------------------------------
-    const newTitle = `${BASE_TITLE} » ${safeName} » Web Editor`;
-            document.title = newTitle;
+    function getActiveMenuText() {
+        // Find the active menu link inside the sidebar or navigation area
+        let activeLink = document.querySelector('aside a.exact-active, nav a.exact-active, .sidebar a.exact-active');
+        
+        if (activeLink) {
+            // GHL usually wraps the menu text in a span with the class 'nav-title'
+            let titleSpan = activeLink.querySelector('span.nav-title');
+            if (titleSpan) {
+                return titleSpan.textContent.trim();
+            }
             
-    // -----------------------------------------------------------------
-    // 6️⃣  (Optional) expose the name globally for other scripts.
-    // -----------------------------------------------------------------
-    window.AutoMyBiz = window.AutoMyBiz || {};
-    window.AutoMyBiz.businessName = safeName;
+            // Fallback if 'nav-title' span isn't found
+            return activeLink.textContent.trim();
+        }
+        return null;
+    }
+
+    function updateTitle() {
+        // -----------------------------------------------------------------
+        // Exception: GoHighLevel Web Editor (page-builder) pages
+        // -----------------------------------------------------------------
+        if (window.location.href.includes('page-builder')) {
+            // Grab the business name passed via the query string (e.g., ?business_name=...)
+            const params = new URLSearchParams(window.location.search);
+            const rawName = params.get('business_name')?.trim() ?? 'Unknown';
+
+            // Simple HTML sanitisation to prevent XSS
+            const div = document.createElement('div');
+            div.textContent = rawName;
+            const safeName = div.innerHTML;
+
+            // Build the title: BASE_TITLE » Business Name » Web Editor
+            const newTitle = `${BASE_TITLE} » ${safeName} » Web Editor`;
+
+            // Update the document title only if it changed
+        if (document.title !== newTitle) {
+
+            document.title = newTitle;
+            }
+            // Skip the normal title‑building logic for editor pages
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Existing title‑building logic for all other pages (unchanged)
+        // -----------------------------------------------------------------
+        const menuText = getActiveMenuText();
+        const subAccountText = getSubAccountName();
+        const currentBaseTitle = getBaseTitle();
+            
+        let parts = [];
+
+        if (SHOW_AGENCY_NAME && currentBaseTitle && currentBaseTitle.length > 0) {
+            parts.push(currentBaseTitle);
+        }
+
+        // Append sub‑account if enabled, exists, and doesn't match the base title
+        if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText.length > 0 && subAccountText !== currentBaseTitle) {
+            parts.push(subAccountText);
+        }
+
+        if (menuText && menuText.length > 0) {
+            parts.push(menuText);
+        }
+
+        let newTitle = parts.join(SEPARATOR);
+
+        // Only update if it's different to prevent browser lag
+        if (document.title !== newTitle) {
+            isUpdatingTitle = true;
+            document.title = newTitle;
+
+            // Allow a tiny window for the DOM to process the title change
+            // before we accept external changes again
+            setTimeout(function () {
+                isUpdatingTitle = false;
+            }, 50);
+        }
+    }
+
+    function triggerUpdates() {
+        setTimeout(updateTitle, 100);
+        setTimeout(updateTitle, 500);
+        setTimeout(updateTitle, 1000);
+        setTimeout(updateTitle, 2500); // Extra time for sub-account data load
+    }
+
+    // 1. Run initially on page load
+    triggerUpdates();
+
+    // 2. Observe changes to the <title> element
+    // This catches GoHighLevel's router trying to reset the title during navigation
+    const titleElement = document.querySelector('title');
+    if (titleElement) {
+        const titleObserver = new MutationObserver(function() {
+            // Ignore mutations caused by our own script
+            if (isUpdatingTitle) return;
+            
+            updateTitle();
+            
+            // The DOM active classes sometimes update a few milliseconds after the title changes,
+            // so we queue a few follow-up checks.
+            setTimeout(updateTitle, 100);
+            setTimeout(updateTitle, 500);
+        });
+        
+        // Start observing text changes inside the <title> tag
+        titleObserver.observe(titleElement, { childList: true, characterData: true, subtree: true });
+    }
+
+    // 3. Listen for ALL clicks on the document to catch sub-account switching
+    document.addEventListener('click', triggerUpdates);
+
+    // 4. Hook into SPA History API to catch routing transitions
+    const originalPushState = history.pushState;
+    history.pushState = function() {
+        originalPushState.apply(this, arguments);
+        triggerUpdates();
+    };
+    
+    const originalReplaceState = history.replaceState;
+    history.replaceState = function() {
+        originalReplaceState.apply(this, arguments);
+        triggerUpdates();
+    };
+    
+    window.addEventListener('popstate', triggerUpdates);
+
 })();
