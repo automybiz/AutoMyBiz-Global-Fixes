@@ -1,57 +1,23 @@
-/**
- * fix_page_titles.js
- *
- * 1️⃣  Reads the business name from a <meta name="ghl-business-name">
- *     element that the Whitelabel page injects.  If that element is missing
- *     it falls back to the legacy query‑string method (for backward compatibility).
- *
- * 2️⃣  Sanitises the name (strip HTML tags, escape special chars) so it
- *     can be safely concatenated into document.title.
- *
- * 3️⃣  On “page‑builder” URLs builds the special title:
- *        BASE_TITLE » <Business Name> » Web Editor
- *
- * 4️⃣  All other pages keep the original title‑building logic.
- */
-
+/* fix_page_titles.js – version that only uses the URL ID */
 (() => {
-    // -----------------------------------------------------------------
-    // 0️⃣  Configuration (change only if you need a different base title)
-    // -----------------------------------------------------------------
-    const BASE_TITLE = window.BASE_TITLE || 'AMB';   // default base title
+    const BASE_TITLE = window.BASE_TITLE || 'AMB';
     const SEPARATOR  = ' » ';
     const SHOW_AGENCY_NAME = true;
     const SHOW_SUB_ACCOUNT = true;
     const SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW = true;
 
     // -----------------------------------------------------------------
-    // 1️⃣  Sanitisation helper – safe for insertion into the title
+    // Helper: safe HTML‑escape a string
     // -----------------------------------------------------------------
     function sanitizeForTitle(raw) {
         if (!raw) return '';
-
-        // Decode URL‑encoding – useful when the old query‑string method is used
-        let decoded;
-        try {
-            decoded = decodeURIComponent(raw);
-        } catch (e) {
-            decoded = raw;   // fallback – should never happen with proper encoding
-        }
-
-        // Strip any HTML tags (e.g. <script>, <img>, etc.)
-        const withoutTags = decoded.replace(/<\/?[^>]+(>|$)/g, '');
-
-        // Trim whitespace
-        const trimmed = withoutTags.trim();
-
-        // Escape characters that still have special meaning in HTML
         const div = document.createElement('div');
-        div.textContent = trimmed;
-        return div.innerHTML;   // safe for insertion into document.title
+        div.textContent = raw;          // forces HTML‑escaping
+        return div.innerHTML;
     }
 
     // -----------------------------------------------------------------
-    // 2️⃣  Existing helpers (unchanged – they are used for the normal pages)
+    // Existing helpers (unchanged – they are used for the normal pages)
     // -----------------------------------------------------------------
     const ORIGINAL_TITLE = document.title.split(SEPARATOR)[0].trim();
     let isUpdatingTitle = false;
@@ -63,17 +29,14 @@
     function getSubAccountName() {
         const nameSpan = document.getElementById('tb_location-switcher-v2-company-title');
         let name = null;
-
-        if (nameSpan) {
-            name = nameSpan.textContent.trim();
-        } else {
+        if (nameSpan) name = nameSpan.textContent.trim();
+        else {
             const switcherDiv = document.getElementById('location-switcher-sidbar-v2');
             if (switcherDiv) {
-                const fallbackSpan = switcherDiv.querySelector('.truncate, .hl_text-overflow');
-                if (fallbackSpan) name = fallbackSpan.textContent.trim();
+                const fallback = switcherDiv.querySelector('.truncate, .hl_text-overflow');
+                if (fallback) name = fallback.textContent.trim();
             }
         }
-
         if (name) {
             if (name.toLowerCase().includes('click here to switch')) {
                 return SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW ? 'Agency' : null;
@@ -84,71 +47,72 @@
     }
 
     function getActiveMenuText() {
-        const activeLink = document.querySelector('aside a.exact-active, nav a.exact-active, .sidebar a.exact-active');
-        if (activeLink) {
-            const titleSpan = activeLink.querySelector('span.nav-title');
-            if (titleSpan) return titleSpan.textContent.trim();
-            return activeLink.textContent.trim();
-        }
-        return null;
+        const link = document.querySelector('aside a.exact-active, nav a.exact-active, .sidebar a.exact-active');
+        if (!link) return null;
+        const span = link.querySelector('span.nav-title');
+        return span ? span.textContent.trim() : link.textContent.trim();
     }
 
     // -----------------------------------------------------------------
-    // 3️⃣  Title‑building function – now includes the editor‑page exception
+    // Title‑building function
     // -----------------------------------------------------------------
     function updateTitle() {
         // -------------------------------------------------------------
-        // 3A️⃣  EDITOR PAGE (page‑builder) – special handling
+        // EDITOR PAGE (page‑builder) – special handling
         // -------------------------------------------------------------
         if (window.location.href.includes('page-builder')) {
-            // ---- 1️⃣  Try to read the name from the <meta> tag ----
+            // ---- 1️⃣  Extract the location‑ID from the URL ----
+            // URL pattern: …/location/<ID>/…
+            const parts = window.location.pathname.split('/');
+            const locIdx = parts.indexOf('location');
             let rawName = '';
-            const metaTag = document.querySelector('meta[name="ghl-business-name"]');
-            if (metaTag && metaTag.content) {
-                rawName = metaTag.content;
-            } else {
-                // ---- 2️⃣  Fallback to the old query‑string method (legacy) ----
-                const params = new URLSearchParams(window.location.search);
-                rawName = params.get('business_name') ?? '';
+            if (locIdx !== -1 && parts[locIdx + 1]) {
+                // Use the ID as a fallback name; you can replace this with a fetch call later
+                rawName = parts[locIdx + 1];
             }
 
-            // Use the sanitiser we defined above
-            const safeName = rawName ? sanitizeForTitle(rawName) : 'Unknown';
+            // ---- 2️⃣  OPTIONAL: fetch a friendly name from a tiny endpoint ----
+            // Uncomment the block below and replace `https://example.com/api/name?id=` with your own service.
+            /*
+            fetch(`https://example.com/api/name?id=${encodeURIComponent(rawName)}`)
+                .then(r => r.json())
+                .then(data => {
+                    const friendly = data && data.name ? data.name : rawName;
+                    applyTitle(friendly);
+                })
+                .catch(() => applyTitle(rawName));
+            return; // exit; the async fetch will call applyTitle later
+            */
 
-            const newTitle = `${BASE_TITLE} » ${safeName} » Web Editor`;
-
-            if (document.title !== newTitle) {
-                isUpdatingTitle = true;
-                document.title = newTitle;
-                setTimeout(() => { isUpdatingTitle = false; }, 50);
-            }
-            // Skip the normal logic – we are done for the editor page
-            return;
+            // ---- 3️⃣  If you don’t have an API, just use the ID (or you can hard‑code a map) ----
+            applyTitle(rawName);
+            return; // stop the normal flow for the editor page
         }
 
         // -------------------------------------------------------------
-        // 3B️⃣  ALL OTHER PAGES – keep the original behaviour
+        // NON‑EDITOR PAGES – keep the original behaviour
         // -------------------------------------------------------------
         const menuText = getActiveMenuText();
         const subAccountText = getSubAccountName();
-        const currentBaseTitle = getBaseTitle();
+        const base = getBaseTitle();
 
         const parts = [];
-
-        if (SHOW_AGENCY_NAME && currentBaseTitle && currentBaseTitle.length > 0) {
-            parts.push(currentBaseTitle);
-        }
-
-        if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText.length > 0 && subAccountText !== currentBaseTitle) {
-            parts.push(subAccountText);
-        }
-
-        if (menuText && menuText.length > 0) {
-            parts.push(menuText);
-        }
+        if (SHOW_AGENCY_NAME && base) parts.push(base);
+        if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText !== base) parts.push(subAccountText);
+        if (menuText) parts.push(menuText);
 
         const newTitle = parts.join(SEPARATOR);
+        if (document.title !== newTitle) {
+            isUpdatingTitle = true;
+            document.title = newTitle;
+            setTimeout(() => { isUpdatingTitle = false; }, 50);
+        }
+    }
 
+    // Helper that actually writes the title (used for both sync and async paths)
+    function applyTitle(name) {
+        const safe = name ? sanitizeForTitle(name) : 'Unknown';
+        const newTitle = `${BASE_TITLE} » ${safe} » Web Editor`;
         if (document.title !== newTitle) {
             isUpdatingTitle = true;
             document.title = newTitle;
@@ -157,44 +121,37 @@
     }
 
     // -----------------------------------------------------------------
-    // 4️⃣  Helper that runs the title update a few times (covers async loads)
+    // Run the update a few times (covers async loads) and set up observers
     // -----------------------------------------------------------------
     function triggerUpdates() {
         setTimeout(updateTitle, 100);
         setTimeout(updateTitle, 500);
         setTimeout(updateTitle, 1000);
-        setTimeout(updateTitle, 2500);   // extra time for sub‑account data load
+        setTimeout(updateTitle, 2500);
     }
 
-    // -----------------------------------------------------------------
-    // 5️⃣  Initialise – run once, then watch for SPA navigation / clicks
-    // -----------------------------------------------------------------
     triggerUpdates();
 
-    // Observe changes to the <title> element (GoHighLevel sometimes rewrites it)
-    const titleElement = document.querySelector('title');
-    if (titleElement) {
-        const titleObserver = new MutationObserver(() => {
-            if (isUpdatingTitle) return;   // ignore our own changes
+    const titleEl = document.querySelector('title');
+    if (titleEl) {
+        const obs = new MutationObserver(() => {
+            if (isUpdatingTitle) return;
             updateTitle();
             setTimeout(updateTitle, 100);
             setTimeout(updateTitle, 500);
         });
-        titleObserver.observe(titleElement, { childList: true, characterData: true, subtree: true });
+        obs.observe(titleEl, { childList: true, characterData: true, subtree: true });
     }
 
-    // Clicks anywhere (sub‑account switching, menu clicks, etc.)
     document.addEventListener('click', triggerUpdates);
-
-    // SPA History API hooks (pushState / replaceState)
-    const originalPushState = history.pushState;
+    const push = history.pushState;
     history.pushState = function () {
-        originalPushState.apply(this, arguments);
+        push.apply(this, arguments);
         triggerUpdates();
     };
-    const originalReplaceState = history.replaceState;
+    const replace = history.replaceState;
     history.replaceState = function () {
-        originalReplaceState.apply(this, arguments);
+        replace.apply(this, arguments);
         triggerUpdates();
     };
     window.addEventListener('popstate', triggerUpdates);
