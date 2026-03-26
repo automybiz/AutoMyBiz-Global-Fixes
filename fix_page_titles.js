@@ -6,7 +6,8 @@
  * New features:
  *   • Stores the sub‑account name in localStorage on normal pages.
  *   • Detects the Web Editor page (URL contains "/page-builder/") and
- *     pulls the stored sub‑account name when the normal menu is absent.
+ *     pulls the stored sub‑account name (or parses the original title) when
+ *     the normal menu is absent.
  *   • Waits for the page to be fully loaded (including delayed data) before
  *     attempting the first title update.
  */
@@ -41,17 +42,33 @@
      * Returns the sub‑account name.
      *   • On normal pages it reads it from the DOM and stores it in localStorage.
      *   • On the Web Editor page (URL contains "/page-builder/") it reads the
-     *     stored value from localStorage because the menu is missing.
+     *     stored value from localStorage. If nothing is stored (user opened the
+     *     page directly) it falls back to parsing the original document title.
      */
     function getSubAccountName() {
         const PAGE_BUILDER_PATH = "/page-builder/";
 
         // --------------------------------------------------------------------
-        // 1️⃣  Web Editor detection – use stored name
+        // 1️⃣  Web Editor detection – try stored name first
         // --------------------------------------------------------------------
         if (window.location.pathname.includes(PAGE_BUILDER_PATH)) {
             const stored = localStorage.getItem("subAccountName");
-            return stored ? stored : null;
+            if (stored) return stored;
+
+            // ----------------------------------------------------------------
+            // 1b️⃣  No stored value – attempt to recover it from the original title
+            // ----------------------------------------------------------------
+            // Expected original format: "BASE » SUB_ACCOUNT » …"
+            const parts = document.title.split(SEPARATOR).map(p => p.trim());
+            if (parts.length >= 3) {
+                const recovered = parts[1];
+                if (recovered) {
+                    localStorage.setItem("subAccountName", recovered);
+                    return recovered;
+                }
+            }
+            // If we still can't find it, just return null (title will be BASE only)
+            return null;
         }
 
         // --------------------------------------------------------------------
@@ -93,8 +110,18 @@
 
     /**
      * Returns the currently active menu item text.
+     * For the Web Editor page the normal menu is missing, so we fall back to a
+     * hard‑coded label when the URL contains "/page-builder/".
      */
     function getActiveMenuText() {
+        // --------------------------------------------------------------------
+        // Web Editor fallback
+        // --------------------------------------------------------------------
+        if (window.location.pathname.includes("/page-builder/")) {
+            return "Web Editor";
+        }
+
+        // Normal case – look for the active link in the sidebar / navigation
         const activeLink = document.querySelector(
             "aside a.exact-active, nav a.exact-active, .sidebar a.exact-active"
         );
@@ -151,7 +178,7 @@
     // 2️⃣  Full load (all resources, including delayed API calls)
     window.addEventListener("load", triggerUpdates);
 
-    // 3️⃣  In case the page is already past those events (e.g., script injected later)
+    // 3️⃣  In case the script is injected after those events have already fired
     if (document.readyState === "complete" || document.readyState === "interactive") {
         triggerUpdates();
     }
