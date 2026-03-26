@@ -21,6 +21,14 @@
     }
 
     function getSubAccountName() {
+        // New: Detect Web Editor (page‑builder) URLs and pull the name from localStorage
+        const PAGE_BUILDER_PATH = '/page-builder/';
+        if (window.location.pathname.includes(PAGE_BUILDER_PATH)) {
+            // Return the stored sub‑account name if we have one
+            const storedName = localStorage.getItem('subAccountName');
+            return storedName ? storedName : null;
+        }
+
         let nameSpan = document.getElementById('tb_location-switcher-v2-company-title');
         let name = null;
         
@@ -38,8 +46,13 @@
         if (name) {
             // Check for placeholder text when in Agency view
             if (name.toLowerCase().includes('click here to switch')) {
-                return SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW ? "Agency" : null;
+                const agencyLabel = SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW ? "Agency" : null;
+                // Store the agency label (or null) for later use
+                if (agencyLabel) localStorage.setItem('subAccountName', agencyLabel);
+                return agencyLabel;
             }
+            // Store the retrieved sub‑account name for later (Web Editor) use
+            localStorage.setItem('subAccountName', name);
             return name;
         }
         return null;
