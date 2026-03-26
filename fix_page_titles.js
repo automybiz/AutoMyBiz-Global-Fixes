@@ -1,13 +1,12 @@
 /**
  * fix_page_titles.js
  *
- * 1️⃣  Reads the business name that was injected by the page (global var
- *     `window.GHL_SUBACCOUNT_NAME` or a hidden element with id
- *     `ghl-business-name`).  If neither exists it falls back to the old
- *     query‑string method for backward compatibility.
+ * 1️⃣  Reads the business name from a <meta name="ghl-business-name">
+ *     element that the Whitelabel page injects.  If that element is missing
+ *     it falls back to the legacy query‑string method (for backward compatibility).
  *
  * 2️⃣  Sanitises the name (strip HTML tags, escape special chars) so it
- *     can be safely concatenated into `document.title`.
+ *     can be safely concatenated into document.title.
  *
  * 3️⃣  On “page‑builder” URLs builds the special title:
  *        BASE_TITLE » <Business Name> » Web Editor
@@ -17,7 +16,7 @@
 
 (() => {
     // -----------------------------------------------------------------
-    // 0️⃣  Configuration (you can change these values if you wish)
+    // 0️⃣  Configuration (change only if you need a different base title)
     // -----------------------------------------------------------------
     const BASE_TITLE = window.BASE_TITLE || 'AMB';   // default base title
     const SEPARATOR  = ' » ';
@@ -52,7 +51,7 @@
     }
 
     // -----------------------------------------------------------------
-    // 2️⃣  Existing helpers (unchanged – used for the normal pages)
+    // 2️⃣  Existing helpers (unchanged – they are used for the normal pages)
     // -----------------------------------------------------------------
     const ORIGINAL_TITLE = document.title.split(SEPARATOR)[0].trim();
     let isUpdatingTitle = false;
@@ -102,19 +101,15 @@
         // 3A️⃣  EDITOR PAGE (page‑builder) – special handling
         // -------------------------------------------------------------
         if (window.location.href.includes('page-builder')) {
-            // ---- 1️⃣  Try to read the name from the global variable ----
+            // ---- 1️⃣  Try to read the name from the <meta> tag ----
             let rawName = '';
-            if (window.GHL_SUBACCOUNT_NAME) {
-                rawName = window.GHL_SUBACCOUNT_NAME;
+            const metaTag = document.querySelector('meta[name="ghl-business-name"]');
+            if (metaTag && metaTag.content) {
+                rawName = metaTag.content;
             } else {
-                // ---- 2️⃣  Fallback to a hidden element (if you used that approach) ----
-                const hiddenEl = document.getElementById('ghl-business-name');
-                if (hiddenEl) rawName = hiddenEl.textContent;
-                else {
-                    // ---- 3️⃣  Final fallback – old query‑string method (for legacy pages) ----
-                    const params = new URLSearchParams(window.location.search);
-                    rawName = params.get('business_name') ?? '';
-                }
+                // ---- 2️⃣  Fallback to the old query‑string method (legacy) ----
+                const params = new URLSearchParams(window.location.search);
+                rawName = params.get('business_name') ?? '';
             }
 
             // Use the sanitiser we defined above
