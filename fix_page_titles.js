@@ -63,63 +63,35 @@
     }
 
     function updateTitle() {
-        // -----------------------------------------------------------------
-        // Exception: GoHighLevel Web Editor (page-builder) pages
-        // -----------------------------------------------------------------
-        if (window.location.href.includes('page-builder')) {
-            // Grab the business name passed via the query string (e.g., ?business_name=...)
-            const params = new URLSearchParams(window.location.search);
-            const rawName = params.get('business_name')?.trim() ?? 'Unknown';
-
-            // Simple HTML sanitisation to prevent XSS
-            const div = document.createElement('div');
-            div.textContent = rawName;
-            const safeName = div.innerHTML;
-
-            // Build the title: BASE_TITLE » Business Name » Web Editor
-            const newTitle = `${BASE_TITLE} » ${safeName} » Web Editor`;
-
-            // Update the document title only if it changed
-        if (document.title !== newTitle) {
-
-            document.title = newTitle;
-            }
-            // Skip the normal title‑building logic for editor pages
-            return;
-        }
-
-        // -----------------------------------------------------------------
-        // Existing title‑building logic for all other pages (unchanged)
-        // -----------------------------------------------------------------
         const menuText = getActiveMenuText();
         const subAccountText = getSubAccountName();
         const currentBaseTitle = getBaseTitle();
-            
+        
         let parts = [];
-
+        
         if (SHOW_AGENCY_NAME && currentBaseTitle && currentBaseTitle.length > 0) {
             parts.push(currentBaseTitle);
         }
-
-        // Append sub‑account if enabled, exists, and doesn't match the base title
+        
+        // Append sub-account if enabled, exists, and doesn't match the base title
         if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText.length > 0 && subAccountText !== currentBaseTitle) {
             parts.push(subAccountText);
         }
-
+        
         if (menuText && menuText.length > 0) {
             parts.push(menuText);
         }
-
+        
         let newTitle = parts.join(SEPARATOR);
 
         // Only update if it's different to prevent browser lag
         if (document.title !== newTitle) {
             isUpdatingTitle = true;
             document.title = newTitle;
-
-            // Allow a tiny window for the DOM to process the title change
+            
+            // Allow a tiny window for the DOM to process the title change 
             // before we accept external changes again
-            setTimeout(function () {
+            setTimeout(function() {
                 isUpdatingTitle = false;
             }, 50);
         }
