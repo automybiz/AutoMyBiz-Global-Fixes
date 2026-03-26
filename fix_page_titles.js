@@ -1,24 +1,23 @@
 /**
  * fix_page_titles.js
  *
- * –1️⃣  Reads the `business_name` query‑string parameter.
- * 2️⃣  Sanitises it (strip HTML tags, decode URL‑encoding, escape HTML).
- * 3️⃣  If we are on a “page‑builder” URL, builds a special title:
- *        BASE_TITLE » <Business Name> » Web Editor
- * 4️⃣  Otherwise falls back to the original title‑building logic that
- *      already runs on every other page.
+ * 1️⃣  Reads the business name that was injected by the page (global var
+ *     `window.GHL_SUBACCOUNT_NAME` or a hidden element with id
+ *     `ghl-business-name`).  If neither exists it falls back to the old
+ *     query‑string method for backward compatibility.
  *
- * --------------------------------------------------------------
- *  NOTE: The script is loaded on **all** pages, but the special
- *        editor handling only fires when the URL contains
- *        “page-builder”.  All other pages keep their existing title
- *        behaviour unchanged.
- * --------------------------------------------------------------
+ * 2️⃣  Sanitises the name (strip HTML tags, escape special chars) so it
+ *     can be safely concatenated into `document.title`.
+ *
+ * 3️⃣  On “page‑builder” URLs builds the special title:
+ *        BASE_TITLE » <Business Name> » Web Editor
+ *
+ * 4️⃣  All other pages keep the original title‑building logic.
  */
 
 (() => {
     // -----------------------------------------------------------------
-    // 0️⃣  Configuration (you can keep these values or move them elsewhere)
+    // 0️⃣  Configuration (you can change these values if you wish)
     // -----------------------------------------------------------------
     const BASE_TITLE = window.BASE_TITLE || 'AMB';   // default base title
     const SEPARATOR  = ' » ';
@@ -27,12 +26,12 @@
     const SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW = true;
 
     // -----------------------------------------------------------------
-    // 1️⃣  Helper – sanitise a string for safe insertion into the title
+    // 1️⃣  Sanitisation helper – safe for insertion into the title
     // -----------------------------------------------------------------
     function sanitizeForTitle(raw) {
         if (!raw) return '';
 
-        // a) Decode URL‑encoding (e.g. %20 → space, %3C → <)
+        // Decode URL‑encoding – useful when the old query‑string method is used
         let decoded;
         try {
             decoded = decodeURIComponent(raw);
@@ -40,21 +39,20 @@
             decoded = raw;   // fallback – should never happen with proper encoding
         }
 
-        // b) Remove any HTML tags (strip <script>, <img>, <a>, etc.)
+        // Strip any HTML tags (e.g. <script>, <img>, etc.)
         const withoutTags = decoded.replace(/<\/?[^>]+(>|$)/g, '');
 
-        // c) Trim whitespace
+        // Trim whitespace
         const trimmed = withoutTags.trim();
 
-        // d) Escape characters that still have special meaning in HTML
-        //    (the browser does this automatically when you set textContent)
+        // Escape characters that still have special meaning in HTML
         const div = document.createElement('div');
         div.textContent = trimmed;
         return div.innerHTML;   // safe for insertion into document.title
     }
 
     // -----------------------------------------------------------------
-    // 2️⃣  Existing helpers (unchanged – they are used for the normal pages)
+    // 2️⃣  Existing helpers (unchanged – used for the normal pages)
     // -----------------------------------------------------------------
     const ORIGINAL_TITLE = document.title.split(SEPARATOR)[0].trim();
     let isUpdatingTitle = false;
@@ -64,15 +62,15 @@
     }
 
     function getSubAccountName() {
-        let nameSpan = document.getElementById('tb_location-switcher-v2-company-title');
+        const nameSpan = document.getElementById('tb_location-switcher-v2-company-title');
         let name = null;
 
         if (nameSpan) {
             name = nameSpan.textContent.trim();
         } else {
-            let switcherDiv = document.getElementById('location-switcher-sidbar-v2');
+            const switcherDiv = document.getElementById('location-switcher-sidbar-v2');
             if (switcherDiv) {
-                let fallbackSpan = switcherDiv.querySelector('.truncate, .hl_text-overflow');
+                const fallbackSpan = switcherDiv.querySelector('.truncate, .hl_text-overflow');
                 if (fallbackSpan) name = fallbackSpan.textContent.trim();
             }
         }
@@ -87,9 +85,9 @@
     }
 
     function getActiveMenuText() {
-        let activeLink = document.querySelector('aside a.exact-active, nav a.exact-active, .sidebar a.exact-active');
+        const activeLink = document.querySelector('aside a.exact-active, nav a.exact-active, .sidebar a.exact-active');
         if (activeLink) {
-            let titleSpan = activeLink.querySelector('span.nav-title');
+            const titleSpan = activeLink.querySelector('span.nav-title');
             if (titleSpan) return titleSpan.textContent.trim();
             return activeLink.textContent.trim();
         }
@@ -97,15 +95,27 @@
     }
 
     // -----------------------------------------------------------------
-    // 3️⃣  The **new** title‑building function – now includes the editor case
+    // 3️⃣  Title‑building function – now includes the editor‑page exception
     // -----------------------------------------------------------------
     function updateTitle() {
         // -------------------------------------------------------------
         // 3A️⃣  EDITOR PAGE (page‑builder) – special handling
         // -------------------------------------------------------------
         if (window.location.href.includes('page-builder')) {
-            const params = new URLSearchParams(window.location.search);
-            const rawName = params.get('business_name') ?? '';
+            // ---- 1️⃣  Try to read the name from the global variable ----
+            let rawName = '';
+            if (window.GHL_SUBACCOUNT_NAME) {
+                rawName = window.GHL_SUBACCOUNT_NAME;
+            } else {
+                // ---- 2️⃣  Fallback to a hidden element (if you used that approach) ----
+                const hiddenEl = document.getElementById('ghl-business-name');
+                if (hiddenEl) rawName = hiddenEl.textContent;
+                else {
+                    // ---- 3️⃣  Final fallback – old query‑string method (for legacy pages) ----
+                    const params = new URLSearchParams(window.location.search);
+                    rawName = params.get('business_name') ?? '';
+                }
+            }
 
             // Use the sanitiser we defined above
             const safeName = rawName ? sanitizeForTitle(rawName) : 'Unknown';
@@ -128,7 +138,7 @@
         const subAccountText = getSubAccountName();
         const currentBaseTitle = getBaseTitle();
 
-        let parts = [];
+        const parts = [];
 
         if (SHOW_AGENCY_NAME && currentBaseTitle && currentBaseTitle.length > 0) {
             parts.push(currentBaseTitle);
