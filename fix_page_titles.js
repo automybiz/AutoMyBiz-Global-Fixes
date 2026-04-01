@@ -3,13 +3,9 @@
  * Custom JS to dynamically update the GoHighLevel Page Title
  * Format: "[ BASE TITLE ] » [ SELECTED SUB ACCOUNT ] » [ SELECTED MENU ITEM ]"
  *
- * New features:
- *   • Stores the sub‑account name in localStorage on normal pages.
- *   • Detects the Web Editor page (URL contains "/page-builder/") and
- *     pulls the stored sub‑account name (or parses the original title) when
- *     the normal menu is absent.
- *   • Waits for the page to be fully loaded (including delayed data) before
- *     attempting the first title update.
+ * New feature:
+ *   • BASE_TITLE_ENABLED – toggles the inclusion of the base title (and its
+ *     preceding separator) in the final title string.
  */
 
 (function () {
@@ -17,6 +13,7 @@
     // Configuration
     // ------------------------------------------------------------------------
     const BASE_TITLE = "AMB";                     // Override with a custom base title if desired
+    const BASE_TITLE_ENABLED = true;              // Set to false to hide the base title completely
     const SEPARATOR = " » ";
     const SHOW_AGENCY_NAME = true;                // Hide agency base name if false
     const SHOW_SUB_ACCOUNT = true;                // Hide sub‑account name if false
@@ -28,6 +25,7 @@
     // Capture the original title on page load (fallback base)
     const ORIGINAL_TITLE = document.title.split(SEPARATOR)[0].trim();
     let isUpdatingTitle = false;                  // Prevent feedback loops
+    let animationTimer = null;                    // For optional animated title (if used)
 
     // ------------------------------------------------------------------------
     // Helpers
@@ -41,7 +39,7 @@
     /**
      * Returns the sub‑account name.
      *   • On normal pages it reads it from the DOM and stores it in localStorage.
-     *   • On the Web Editor page (URL contains "/page-builder/") it reads the
+     *   • On the Web EditorEditor page (URL contains "/page-builder/") it reads the
      *     stored value from localStorage. If nothing is stored (user opened the
      *     page directly) it falls back to parsing the original document title.
      */
@@ -67,7 +65,6 @@
                     return recovered;
                 }
             }
-            // If we still can't find it, just return null (title will be BASE only)
             return null;
         }
 
@@ -110,7 +107,7 @@
 
     /**
      * Returns the currently active menu item text.
-     * For the Web Editor page the normal menu is missing, so we fall back to a
+     * For the Web Editor page the normal menu is missing, so we fall back to a
      * hard‑coded label when the URL contains "/page-builder/".
      */
     function getActiveMenuText() {
@@ -135,6 +132,8 @@
 
     /**
      * Builds and applies the new title.
+     * Respects BASE_TITLE_ENABLED – when false the base title (and its
+     * preceding separator) are omitted.
      */
     function updateTitle() {
         const menuText = getActiveMenuText();
@@ -143,8 +142,16 @@
 
         const parts = [];
 
-        if (SHOW_AGENCY_NAME && base) parts.push(base);
-        if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText !== base) parts.push(subAccountText);
+        // Only include the base title if the flag is true AND the user wants it shown
+        if (BASE_TITLE_ENABLED && SHOW_AGENCY_NAME && base) {
+            parts.push(base);
+        }
+
+        // Append sub‑account if enabled, exists, and doesn't duplicate the base
+        if (SHOW_SUB_ACCOUNT && subAccountText && subAccountText.length > 0 && subAccountText !== base) {
+            parts.push(subAccountText);
+        }
+
         if (menuText) parts.push(menuText);
 
         const newTitle = parts.join(SEPARATOR);
