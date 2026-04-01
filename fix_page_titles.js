@@ -4,7 +4,7 @@
  * Format: "[ BASE TITLE ] » [ SELECTED SUB ACCOUNT ] » [ SELECTED MENU ITEM ]"
  *
  * New feature:
- *   • BASE_TITLE_ENABLED – toggles the inclusion of the base title (and its
+ *   • SHOW_BASE_TITLE – toggles the inclusion of the base title (and its
  *     preceding separator) in the final title string.
  */
 
@@ -13,8 +13,8 @@
     // Configuration
     // ------------------------------------------------------------------------
     const BASE_TITLE = "AMB";                     // Override with a custom base title if desired
-    const BASE_TITLE_ENABLED = false;              // Set to false to hide the base title completely
     const SEPARATOR = " » ";
+    const SHOW_BASE_TITLE = false;                 // Set to false to hide the base title completely
     const SHOW_AGENCY_NAME = true;                // Hide agency base name if false
     const SHOW_SUB_ACCOUNT = true;                // Hide sub‑account name if false
     const SHOW_AGENCY_AS_SUB_ACCOUNT_WHEN_IN_AGENCY_VIEW = true;
@@ -39,7 +39,7 @@
     /**
      * Returns the sub‑account name.
      *   • On normal pages it reads it from the DOM and stores it in localStorage.
-     *   • On the Web EditorEditor page (URL contains "/page-builder/") it reads the
+     *   • On the Web Editor page (URL contains "/page-builder/") it reads the
      *     stored value from localStorage. If nothing is stored (user opened the
      *     page directly) it falls back to parsing the original document title.
      */
@@ -132,7 +132,7 @@
 
     /**
      * Builds and applies the new title.
-     * Respects BASE_TITLE_ENABLED – when false the base title (and its
+     * Respects SHOW_BASE_TITLE – when false the base title (and its
      * preceding separator) are omitted.
      */
     function updateTitle() {
@@ -143,7 +143,7 @@
         const parts = [];
 
         // Only include the base title if the flag is true AND the user wants it shown
-        if (BASE_TITLE_ENABLED && SHOW_AGENCY_NAME && base) {
+        if (SHOW_BASE_TITLE && SHOW_AGENCY_NAME && base) {
             parts.push(base);
         }
 
