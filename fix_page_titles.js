@@ -13,7 +13,7 @@
     // Configuration
     // ------------------------------------------------------------------------
     const BASE_TITLE = "AMB";                     // Override with a custom base title if desired
-    const BASE_TITLE_ENABLED = true;              // Set to false to hide the base title completely
+    const BASE_TITLE_ENABLED = false;              // Set to false to hide the base title completely
     const SEPARATOR = " » ";
     const SHOW_AGENCY_NAME = true;                // Hide agency base name if false
     const SHOW_SUB_ACCOUNT = true;                // Hide sub‑account name if false
