@@ -117,13 +117,12 @@
         
         // Only trigger tooltip if we are on a valid trigger AND not on any interactive icons/buttons
         if (target && !isOverInteractiveElement(e)) {
-            // Additional check for notes: ensure there is content to copy and we're not on the body
+            // Additional check for notes: ensure we're not hovering over the body text itself
             if (noteTrigger) {
                 const card = noteTrigger.closest('.note-card-accent, .note-card-content');
-                const contentDiv = card ? card.querySelector('.note-content-text') : null;
+                const contentDiv = card ? (card.querySelector('.note-content-text') || card.querySelector('[class*="note-content"]')) : null;
                 
-                // If we're hovering over the body text itself, don't trigger (unless it's the title)
-                if (!contentDiv || contentDiv.contains(e.target)) {
+                if (contentDiv && contentDiv.contains(e.target)) {
                     if (!isCopied) hideTooltip();
                     return;
                 }
@@ -156,39 +155,28 @@
         const noteTrigger = e.target.closest(NOTE_TITLE_SELECTOR);
         const target = labelTrigger || noteTrigger;
 
-        if (!target) return;
+        if (!target || isOverInteractiveElement(e)) return;
 
-        // Bypass click handler entirely if the user clicks a button or icon
-        if (isOverInteractiveElement(e)) {
-            return;
-        }
-
-        let textToCopy = '';
+        let textToCopy = undefined;
         let originalTooltipText = '';
 
         if (labelTrigger) {
             originalTooltipText = "Click To Copy Input Data";
             const label = labelTrigger.closest('label');
-            if (!label) return;
-
-            // Find the input or textarea sibling or child in the form group
-            let input = label.nextElementSibling ? label.nextElementSibling.querySelector('input, textarea') : null;
-            
-            // Fallback search if the DOM structure differs slightly
-            if (!input) {
-                const parentGroup = label.parentElement;
-                if (parentGroup) {
-                    input = parentGroup.querySelector('input, textarea');
+            if (label) {
+                let input = label.nextElementSibling ? label.nextElementSibling.querySelector('input, textarea') : null;
+                if (!input && label.parentElement) {
+                    input = label.parentElement.querySelector('input, textarea');
                 }
+                if (input) textToCopy = input.value;
             }
-            if (input) textToCopy = input.value || '';
         } else if (noteTrigger) {
             originalTooltipText = "Click To Copy Note Data";
             const card = noteTrigger.closest('.note-card-accent, .note-card-content');
             if (card) {
-                const contentDiv = card.querySelector('.note-content-text');
+                const contentDiv = card.querySelector('.note-content-text') || card.querySelector('[class*="note-content"]');
                 if (contentDiv) {
-                    textToCopy = contentDiv.innerText || '';
+                    textToCopy = (contentDiv.innerText || contentDiv.textContent || '').trim();
                 }
             }
         }
