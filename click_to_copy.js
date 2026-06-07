@@ -1,7 +1,7 @@
 (function() {
     // Configuration for copyable elements
     const LABEL_SELECTOR = '.hr-form-item-label__text';
-    const NOTE_TITLE_SELECTOR = '.note-card-accent p.font-semibold, .note-card-content p.font-semibold, #notes-list-container-contact p.font-semibold';
+    const NOTE_TITLE_SELECTOR = '.note-card-content .font-semibold, .note-card-accent .font-semibold, #notes-list-container-contact .font-semibold';
     const ALL_TRIGGERS = `${LABEL_SELECTOR}, ${NOTE_TITLE_SELECTOR}`;
 
     // 1. Inject custom styles for the label pointer and basic tooltip layout
@@ -117,11 +117,13 @@
         
         // Only trigger tooltip if we are on a valid trigger AND not on any interactive icons/buttons
         if (target && !isOverInteractiveElement(e)) {
-            // Additional check for notes: ensure there is content to copy
+            // Additional check for notes: ensure there is content to copy and we're not on the body
             if (noteTrigger) {
                 const card = noteTrigger.closest('.note-card-accent, .note-card-content');
                 const contentDiv = card ? card.querySelector('.note-content-text') : null;
-                if (!contentDiv) {
+                
+                // If we're hovering over the body text itself, don't trigger (unless it's the title)
+                if (!contentDiv || contentDiv.contains(e.target)) {
                     if (!isCopied) hideTooltip();
                     return;
                 }
