@@ -38,6 +38,10 @@
     let isCopied = false;
     let copiedTimeout = null;
 
+    function debugLog(message, data) {
+        console.log(`%c[ClickToCopy Debug] ${message}`, 'color: #14b8a6; font-weight: bold;', data);
+    }
+
     // Helper to extract styling from the page inputs to keep the tooltip style consistent
     function applyTooltipColors() {
         const sampleInput = document.querySelector('input, textarea, .hr-input-container');
@@ -172,12 +176,56 @@
             }
         } else if (noteTrigger) {
             originalTooltipText = "Click To Copy Note Data";
+            debugLog("Note Trigger Clicked", { 
+                element: noteTrigger, 
+                classes: noteTrigger.className, 
+                text: noteTrigger.innerText 
+            });
+
             const card = noteTrigger.closest('.note-card-accent, .note-card-content');
             if (card) {
-                const contentDiv = card.querySelector('.note-content-text') || card.querySelector('[class*="note-content"]');
+                debugLog("Note Card Found", { 
+                    element: card, 
+                    id: card.id, 
+                    classes: card.className 
+                });
+
+                // Strategy 1: Look for specific content div classes
+                let contentDiv = card.querySelector('.note-content-text') || card.querySelector('[class*="note-content"]');
                 if (contentDiv) {
-                    textToCopy = (contentDiv.innerText || contentDiv.textContent || '').trim();
+                    debugLog("Content Div Found via Selector", { 
+                        element: contentDiv, 
+                        classes: contentDiv.className 
+                    });
+                    textToCopy = (contentDiv.innerText || contentDiv.textContent || '');
                 }
+
+                // Strategy 2: If Strategy 1 yielded nothing or we want to be sure, check for P tags
+                if (!textToCopy || textToCopy.trim().length === 0) {
+                    const pTags = Array.from(card.querySelectorAll('p:not(.font-semibold)'));
+                    if (pTags.length > 0) {
+                        debugLog("Falling back to P tags inside card", pTags);
+                        textToCopy = pTags.map(p => p.innerText || p.textContent).join('\n');
+                    }
+                }
+
+                // Strategy 3: Look for siblings of the title's container
+                if (!textToCopy || textToCopy.trim().length === 0) {
+                    const titleContainer = noteTrigger.closest('.relative');
+                    if (titleContainer && titleContainer.nextElementSibling) {
+                        debugLog("Falling back to sibling of title container", titleContainer.nextElementSibling);
+                        textToCopy = titleContainer.nextElementSibling.innerText || titleContainer.nextElementSibling.textContent;
+                    }
+                }
+
+                if (textToCopy) {
+                    textToCopy = textToCopy.trim();
+                    debugLog("Final extracted text", `"${textToCopy}"`);
+                } else {
+                    debugLog("FAILED to extract any text from note card", { card });
+                }
+            } else {
+                debugLog("FAILED to find note card from trigger", { noteTrigger });
             }
         }
 
@@ -185,9 +233,10 @@
             e.preventDefault();
             e.stopPropagation();
 
+            const charCount = textToCopy.length;
             copyText(textToCopy).then(() => {
                 isCopied = true;
-                showTooltip("Data Copied!", e.pageX, e.pageY);
+                showTooltip(`Copied ${charCount} characters!`, e.pageX, e.pageY);
 
                 clearTimeout(copiedTimeout);
                 copiedTimeout = setTimeout(() => {
