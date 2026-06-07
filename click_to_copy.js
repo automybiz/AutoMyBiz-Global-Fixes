@@ -29,7 +29,7 @@
         }
         #custom-copy-tooltip .char-count {
             color: var(--tooltip-accent);
-            font-weight: bold;
+            font-weight: normal;
         }
     `;
     document.head.appendChild(style);
