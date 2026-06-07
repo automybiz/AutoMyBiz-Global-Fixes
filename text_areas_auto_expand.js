@@ -43,9 +43,11 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
         `;
+        
         overlay.onclick = (e) => {
             if (e.target === overlay) closeOverlay();
         };
+        
         document.body.appendChild(overlay);
         return overlay;
     }
@@ -53,42 +55,63 @@
     function openOverlay() {
         const overlay = createOverlay();
         overlay.innerHTML = '';
+        
+        // Get theme colors from a sample textarea or the document
+        const sampleTextArea = document.querySelector('textarea.hl-text-area-input, textarea');
+        const sampleComp = sampleTextArea ? window.getComputedStyle(sampleTextArea) : null;
+        const panelBg = (sampleComp && sampleComp.backgroundColor !== 'rgba(0, 0, 0, 0)') ? sampleComp.backgroundColor : '#111827';
+        const panelBorder = (sampleComp && sampleComp.borderColor !== 'rgba(0, 0, 0, 0)') ? sampleComp.borderColor : '#1fb2a6';
+
         const contentBox = document.createElement('div');
         contentBox.style.cssText = `
             width: 100%;
-            max-width: 540px;
+            max-width: 560px;
             display: flex;
             flex-direction: column;
             gap: 25px;
+            padding: 30px;
+            background-color: ${panelBg};
+            border: 1px solid ${panelBorder};
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             margin-bottom: 50px;
+            opacity: 1;
         `;
 
-        // Find the contact details container
         const container = document.querySelector('#contact-details') || document.body;
-        // Find all textareas that are not in the notes section (right side)
         const allTextareas = container.querySelectorAll('textarea');
         const targetTextareas = Array.from(allTextareas).filter(t => {
-            // Exclude textareas in notes list or message composers
             return !t.closest('#notes-list-container-contact') && 
                    !t.closest('.note-card') && 
                    !t.closest('.message-composer');
         });
 
         targetTextareas.forEach(origTextarea => {
-            // Find label
             const formItem = origTextarea.closest('.hr-form-item') || origTextarea.parentElement;
             const origLabel = formItem ? formItem.querySelector('.hr-form-item-label__text, label') : null;
-            const labelText = origLabel ? origLabel.innerText.replace('Fullscreen', '').trim() : 'Text Area';
+            
+            // Clean label text: clone and remove the button before reading text
+            let labelText = 'Text Area';
+            if (origLabel) {
+                const tempLabel = origLabel.cloneNode(true);
+                const btn = tempLabel.querySelector('.textarea-fullscreen-btn');
+                if (btn) btn.remove();
+                labelText = tempLabel.innerText.trim();
+            }
 
             const itemWrapper = document.createElement('div');
             itemWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%;';
+            
             const label = document.createElement('label');
             label.innerText = labelText;
+            
+            // Apply original label styling
             if (origLabel) {
                 const computed = window.getComputedStyle(origLabel);
                 label.style.color = computed.color;
                 label.style.fontSize = computed.fontSize;
                 label.style.fontWeight = computed.fontWeight;
+                label.style.fontFamily = computed.fontFamily;
             } else {
                 label.style.color = '#FFF';
             }
@@ -97,19 +120,20 @@
             clone.value = origTextarea.value;
             clone.className = origTextarea.className;
             clone.dataset.isInOverlay = 'true';
-            clone.style.width = '500px';
-            clone.style.maxWidth = '100%';
-            clone.style.alignSelf = 'center';
-
+            
+            // Apply explicit styling to ensure visibility in overlay
             const comp = window.getComputedStyle(origTextarea);
-            clone.style.backgroundColor = comp.backgroundColor;
-            clone.style.color = comp.color;
-            clone.style.borderColor = comp.borderColor;
-            clone.style.borderStyle = comp.borderStyle;
-            clone.style.borderWidth = comp.borderWidth;
-            clone.style.borderRadius = comp.borderRadius;
-            clone.style.padding = comp.padding;
+            clone.style.width = '100%';
+            clone.style.backgroundColor = (comp.backgroundColor !== 'rgba(0, 0, 0, 0)') ? comp.backgroundColor : 'rgba(255,255,255,0.05)';
+            clone.style.color = comp.color || '#FFF';
+            clone.style.borderColor = (comp.borderColor !== 'rgba(0, 0, 0, 0)') ? comp.borderColor : panelBorder;
+            clone.style.borderStyle = comp.borderStyle || 'solid';
+            clone.style.borderWidth = comp.borderWidth || '1px';
+            clone.style.borderRadius = comp.borderRadius || '4px';
+            clone.style.padding = comp.padding || '8px';
             clone.style.fontSize = comp.fontSize;
+            clone.style.fontFamily = comp.fontFamily;
+            clone.style.lineHeight = comp.lineHeight;
 
             clone.oninput = () => {
                 origTextarea.value = clone.value;
@@ -140,14 +164,12 @@
     function injectFullscreenIcon(textarea) {
         if (!textarea || textarea.dataset.fullscreenAttached) return;
 
-        // Try to find the label span directly using GHL's common structure
         const formItem = textarea.closest('.hr-form-item') || textarea.parentElement.closest('.flex');
         let labelContainer = null;
         if (formItem) {
             labelContainer = formItem.querySelector('.hr-form-item-label__text');
         }
 
-        // Fallback: search parents for any label or label-text class
         if (!labelContainer) {
             let p = textarea.parentElement;
             for (let i = 0; i < 4 && p; i++) {
@@ -160,7 +182,6 @@
         if (labelContainer && !labelContainer.querySelector('.textarea-fullscreen-btn')) {
             textarea.dataset.fullscreenAttached = 'true';
             
-            // Ensure container allows horizontal layout
             labelContainer.style.display = 'inline-flex';
             labelContainer.style.alignItems = 'center';
             labelContainer.style.width = '100%';
@@ -194,7 +215,6 @@
         const container = document.querySelector('#contact-details') || document.body;
         const textareas = container.querySelectorAll('textarea');
         textareas.forEach(t => {
-            // Process textareas that are likely data fields (exclude notes/chat)
             if (!t.closest('#notes-list-container-contact') && !t.closest('.note-card')) {
                 setupTextarea(t);
                 injectFullscreenIcon(t);
@@ -202,7 +222,6 @@
         });
     }
 
-    // Setup Observer
     const observer = new MutationObserver((mutations) => {
         let shouldScan = false;
         for (let m of mutations) {
@@ -216,7 +235,6 @@
 
     observer.observe(document.body, { childList: true, subtree: true });
     
-    // Initial and delayed scans to catch GHL's late rendering
     scan();
     setTimeout(scan, 1000);
     setTimeout(scan, 3000);
