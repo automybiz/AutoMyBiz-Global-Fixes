@@ -27,6 +27,10 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             white-space: nowrap;
         }
+        #custom-copy-tooltip .char-count {
+            color: var(--tooltip-accent);
+            font-weight: bold;
+        }
     `;
     document.head.appendChild(style);
 
@@ -51,21 +55,25 @@
             
             tooltip.style.backgroundColor = (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') 
                 ? bgColor 
-                : '#111827';
+                : '#011';
                 
-            tooltip.style.borderColor = computed.borderColor && computed.borderColor !== 'transparent' 
+            const borderColor = computed.borderColor && computed.borderColor !== 'transparent' 
                 ? computed.borderColor 
-                : 'var(--border-color-2, #14b8a6)';
+                : '#0FF';
+                
+            tooltip.style.borderColor = borderColor;
+            tooltip.style.setProperty('--tooltip-accent', borderColor);
                 
             tooltip.style.borderStyle = 'solid';
             tooltip.style.borderWidth = '1px';
-            tooltip.style.color = computed.color || 'var(--text-color-1, #f3f4f6)';
+            tooltip.style.color = computed.color || '#FFF';
         } else {
-            tooltip.style.backgroundColor = '#111827';
-            tooltip.style.borderColor = 'var(--border-color-2, #14b8a6)';
+            tooltip.style.backgroundColor = '#011';
+            tooltip.style.borderColor = '#0FF';
+            tooltip.style.setProperty('--tooltip-accent', '#0FF');
             tooltip.style.borderStyle = 'solid';
             tooltip.style.borderWidth = '1px';
-            tooltip.style.color = 'var(--text-color-1, #f3f4f6)';
+            tooltip.style.color = '#FFF';
         }
     }
 
@@ -77,7 +85,7 @@
 
     function showTooltip(text, x, y) {
         applyTooltipColors();
-        tooltip.textContent = text;
+        tooltip.innerHTML = text;
         updateTooltipPosition(x, y);
         tooltip.style.opacity = '1';
         tooltip.style.visibility = 'visible';
@@ -236,7 +244,7 @@
             const charCount = textToCopy.length;
             copyText(textToCopy).then(() => {
                 isCopied = true;
-                showTooltip(`Copied ${charCount} characters!`, e.pageX, e.pageY);
+                showTooltip(`Copied <span class="char-count">${charCount}</span> Chars!`, e.pageX, e.pageY);
 
                 clearTimeout(copiedTimeout);
                 copiedTimeout = setTimeout(() => {
