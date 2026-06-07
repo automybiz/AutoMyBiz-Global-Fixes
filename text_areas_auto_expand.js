@@ -33,15 +33,15 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7);
             z-index: 1000000;
             display: none;
             justify-content: center;
             align-items: flex-start;
             padding: 60px 20px;
             overflow-y: auto;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         `;
         
         overlay.onclick = (e) => {
@@ -56,24 +56,25 @@
         const overlay = createOverlay();
         overlay.innerHTML = '';
         
-        // Get theme colors from a sample textarea or the document
-        const sampleTextArea = document.querySelector('textarea.hl-text-area-input, textarea');
-        const sampleComp = sampleTextArea ? window.getComputedStyle(sampleTextArea) : null;
-        const panelBg = (sampleComp && sampleComp.backgroundColor !== 'rgba(0, 0, 0, 0)') ? sampleComp.backgroundColor : '#111827';
-        const panelBorder = (sampleComp && sampleComp.borderColor !== 'rgba(0, 0, 0, 0)') ? sampleComp.borderColor : '#1fb2a6';
+        // Target dark theme colors consistent with the screenshot
+        const GHL_BG = '#111827';
+        const GHL_BORDER = '#374151';
+        const GHL_TEXT = '#f9fafb';
+        const GHL_LABEL = '#9ca3af';
+        const GHL_ACCENT = '#1fb2a6';
 
         const contentBox = document.createElement('div');
         contentBox.style.cssText = `
             width: 100%;
-            max-width: 560px;
+            max-width: 600px;
             display: flex;
             flex-direction: column;
-            gap: 25px;
-            padding: 30px;
-            background-color: ${panelBg};
-            border: 1px solid ${panelBorder};
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            gap: 30px;
+            padding: 40px;
+            background-color: #0b0f19;
+            border: 1px solid ${GHL_BORDER};
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
             margin-bottom: 50px;
             opacity: 1;
         `;
@@ -90,50 +91,45 @@
             const formItem = origTextarea.closest('.hr-form-item') || origTextarea.parentElement;
             const origLabel = formItem ? formItem.querySelector('.hr-form-item-label__text, label') : null;
             
-            // Clean label text: clone and remove the button before reading text
+            // Clean label text thoroughly
             let labelText = 'Text Area';
             if (origLabel) {
                 const tempLabel = origLabel.cloneNode(true);
-                const btn = tempLabel.querySelector('.textarea-fullscreen-btn');
-                if (btn) btn.remove();
+                // Remove any buttons or SVGs
+                tempLabel.querySelectorAll('.textarea-fullscreen-btn, svg, button, .hl-text-area-fullscreen-btn').forEach(el => el.remove());
                 labelText = tempLabel.innerText.trim();
             }
 
             const itemWrapper = document.createElement('div');
-            itemWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%;';
+            itemWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 10px; width: 100%;';
             
             const label = document.createElement('label');
             label.innerText = labelText;
             
-            // Apply original label styling
-            if (origLabel) {
-                const computed = window.getComputedStyle(origLabel);
-                label.style.color = computed.color;
-                label.style.fontSize = computed.fontSize;
-                label.style.fontWeight = computed.fontWeight;
-                label.style.fontFamily = computed.fontFamily;
-            } else {
-                label.style.color = '#FFF';
-            }
+            const origLabelComp = origLabel ? window.getComputedStyle(origLabel) : null;
+            label.style.color = (origLabelComp && origLabelComp.color !== 'rgba(0, 0, 0, 0)') ? origLabelComp.color : GHL_LABEL;
+            label.style.fontSize = (origLabelComp) ? origLabelComp.fontSize : '14px';
+            label.style.fontWeight = (origLabelComp) ? origLabelComp.fontWeight : '500';
+            label.style.fontFamily = (origLabelComp) ? origLabelComp.fontFamily : 'inherit';
 
             const clone = document.createElement('textarea');
             clone.value = origTextarea.value;
             clone.className = origTextarea.className;
             clone.dataset.isInOverlay = 'true';
             
-            // Apply explicit styling to ensure visibility in overlay
             const comp = window.getComputedStyle(origTextarea);
             clone.style.width = '100%';
-            clone.style.backgroundColor = (comp.backgroundColor !== 'rgba(0, 0, 0, 0)') ? comp.backgroundColor : 'rgba(255,255,255,0.05)';
-            clone.style.color = comp.color || '#FFF';
-            clone.style.borderColor = (comp.borderColor !== 'rgba(0, 0, 0, 0)') ? comp.borderColor : panelBorder;
+            // If background is transparent, use a solid dark background for visibility
+            clone.style.backgroundColor = (comp.backgroundColor !== 'rgba(0, 0, 0, 0)' && comp.backgroundColor !== 'transparent') ? comp.backgroundColor : GHL_BG;
+            clone.style.color = (comp.color !== 'rgba(0, 0, 0, 0)') ? comp.color : GHL_TEXT;
+            clone.style.borderColor = (comp.borderColor !== 'rgba(0, 0, 0, 0)' && comp.borderColor !== 'transparent') ? comp.borderColor : GHL_BORDER;
             clone.style.borderStyle = comp.borderStyle || 'solid';
             clone.style.borderWidth = comp.borderWidth || '1px';
-            clone.style.borderRadius = comp.borderRadius || '4px';
-            clone.style.padding = comp.padding || '8px';
-            clone.style.fontSize = comp.fontSize;
-            clone.style.fontFamily = comp.fontFamily;
-            clone.style.lineHeight = comp.lineHeight;
+            clone.style.borderRadius = comp.borderRadius || '8px';
+            clone.style.padding = comp.padding || '12px';
+            clone.style.fontSize = comp.fontSize || '14px';
+            clone.style.lineHeight = comp.lineHeight || '1.5';
+            clone.style.outline = 'none';
 
             clone.oninput = () => {
                 origTextarea.value = clone.value;
@@ -163,6 +159,9 @@
 
     function injectFullscreenIcon(textarea) {
         if (!textarea || textarea.dataset.fullscreenAttached) return;
+
+        // Skip textareas already in overlay
+        if (textarea.dataset.isInOverlay === 'true') return;
 
         const formItem = textarea.closest('.hr-form-item') || textarea.parentElement.closest('.flex');
         let labelContainer = null;
@@ -195,7 +194,7 @@
                 align-items: center;
                 margin-left: 10px;
                 cursor: pointer;
-                opacity: 0.8;
+                opacity: 0.6;
                 transition: all 0.2s ease;
                 flex-shrink: 0;
             `;
@@ -205,7 +204,7 @@
                 </svg>
             `;
             btn.onmouseover = () => { btn.style.opacity = '1'; btn.style.transform = 'scale(1.1)'; };
-            btn.onmouseout = () => { btn.style.opacity = '0.8'; btn.style.transform = 'scale(1)'; };
+            btn.onmouseout = () => { btn.style.opacity = '0.6'; btn.style.transform = 'scale(1)'; };
             btn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); openOverlay(); };
             labelContainer.appendChild(btn);
         }
@@ -215,7 +214,7 @@
         const container = document.querySelector('#contact-details') || document.body;
         const textareas = container.querySelectorAll('textarea');
         textareas.forEach(t => {
-            if (!t.closest('#notes-list-container-contact') && !t.closest('.note-card')) {
+            if (!t.closest('#notes-list-container-contact') && !t.closest('.note-card') && t.dataset.isInOverlay !== 'true') {
                 setupTextarea(t);
                 injectFullscreenIcon(t);
             }
@@ -226,8 +225,19 @@
         let shouldScan = false;
         for (let m of mutations) {
             if (m.addedNodes.length > 0) {
-                shouldScan = true;
-                break;
+                // Check if any of the added nodes are textareas or contain textareas
+                let hasTextarea = false;
+                m.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) {
+                        if (node.tagName === 'TEXTAREA' || node.querySelector('textarea')) {
+                            hasTextarea = true;
+                        }
+                    }
+                });
+                if (hasTextarea) {
+                    shouldScan = true;
+                    break;
+                }
             }
         }
         if (shouldScan) scan();
