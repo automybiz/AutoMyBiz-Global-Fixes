@@ -156,44 +156,88 @@
 
     function injectFullscreenIcon(textarea) {
         if (textarea.dataset.fullscreenAttached) return;
-        textarea.dataset.fullscreenAttached = 'true';
 
-        const formItem = textarea.closest('.hr-form-item') || textarea.parentElement.closest('.flex');
-        if (!formItem) return;
+        // More robust label detection for GHL's dynamic structure
+        let label = null;
+        
+        // 1. Try finding via closest .hr-form-item (Standard GHL structure)
+        const formItem = textarea.closest('.hr-form-item');
+        if (formItem) {
+            label = formItem.querySelector('.hr-form-item-label__text, label');
+        }
+        
+        // 2. Fallback: Search siblings and parents for any label-like element
+        if (!label) {
+            let current = textarea.parentElement;
+            let depth = 0;
+            while (current && depth < 4) {
+                // Check if current has a label
+                label = current.querySelector('label, .hr-form-item-label__text, .hr-form-item-label');
+                if (label) break;
+                
+                // Check previous siblings (labels are often before the input container)
+                let sibling = current.previousElementSibling;
+                while (sibling) {
+                    label = sibling.querySelector('.hr-form-item-label__text, label') || 
+                            (sibling.matches('label, .hr-form-item-label__text') ? sibling : null);
+                    if (label) break;
+                    sibling = sibling.previousElementSibling;
+                }
+                if (label) break;
+                
+                current = current.parentElement;
+                depth++;
+                if (current && current.id === 'contact-details') break;
+            }
+        }
 
-        const labelContainer = formItem.querySelector('.hr-form-item-label__text, label');
-        if (labelContainer && !labelContainer.querySelector('.textarea-fullscreen-btn')) {
-            const btn = document.createElement('span');
-            btn.className = 'textarea-fullscreen-btn';
-            btn.title = 'Fullscreen All Text Areas';
-            btn.style.cssText = `
-                display: inline-flex;
-                align-items: center;
-                margin-left: 8px;
-                cursor: pointer;
-                vertical-align: middle;
-                opacity: 0.6;
-                transition: opacity 0.2s;
-                background: transparent;
-            `;
+        // If we found a label (or a container for it), append the button
+        if (label) {
+            // Ensure we target the actual text span if it's a container
+            const target = label.querySelector('.hr-form-item-label__text') || label;
             
-            // SVG Icon
-            btn.innerHTML = `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                </svg>
-            `;
-            
-            btn.onmouseover = () => btn.style.opacity = '1';
-            btn.onmouseout = () => btn.style.opacity = '0.6';
-            
-            btn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openOverlay();
-            };
-            
-            labelContainer.appendChild(btn);
+            if (!target.querySelector('.textarea-fullscreen-btn')) {
+                textarea.dataset.fullscreenAttached = 'true';
+                
+                const btn = document.createElement('span');
+                btn.className = 'textarea-fullscreen-btn';
+                btn.title = 'Fullscreen All Text Areas';
+                btn.style.cssText = `
+                    display: inline-flex;
+                    align-items: center;
+                    margin-left: 8px;
+                    cursor: pointer;
+                    vertical-align: middle;
+                    opacity: 0.7;
+                    transition: all 0.2s ease;
+                    background: transparent;
+                    padding: 2px;
+                `;
+                
+                // SVG Icon
+                btn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                    </svg>
+                `;
+                
+                btn.onmouseover = () => {
+                    btn.style.opacity = '1';
+                    btn.style.transform = 'scale(1.1)';
+                };
+                btn.onmouseout = () => {
+                    btn.style.opacity = '0.7';
+                    btn.style.transform = 'scale(1)';
+                };
+                
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openOverlay();
+                };
+                
+                target.appendChild(btn);
+            }
         }
     }
 
