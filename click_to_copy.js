@@ -1,7 +1,7 @@
 (function() {
     // Configuration for copyable elements
     const LABEL_SELECTOR = '.hr-form-item-label__text';
-    const NOTE_TITLE_SELECTOR = '.note-card-content p.font-semibold';
+    const NOTE_TITLE_SELECTOR = '.note-card-accent p.font-semibold, .note-card-content p.font-semibold, #notes-list-container-contact p.font-semibold';
     const ALL_TRIGGERS = `${LABEL_SELECTOR}, ${NOTE_TITLE_SELECTOR}`;
 
     // 1. Inject custom styles for the label pointer and basic tooltip layout
@@ -119,8 +119,9 @@
         if (target && !isOverInteractiveElement(e)) {
             // Additional check for notes: ensure there is content to copy
             if (noteTrigger) {
-                const card = noteTrigger.closest('.note-card-content');
-                if (!card || !card.querySelector('.note-content-text')) {
+                const card = noteTrigger.closest('.note-card-accent, .note-card-content');
+                const contentDiv = card ? card.querySelector('.note-content-text') : null;
+                if (!contentDiv) {
                     if (!isCopied) hideTooltip();
                     return;
                 }
@@ -181,7 +182,7 @@
             if (input) textToCopy = input.value || '';
         } else if (noteTrigger) {
             originalTooltipText = "Click To Copy Note Data";
-            const card = noteTrigger.closest('.note-card-content');
+            const card = noteTrigger.closest('.note-card-accent, .note-card-content');
             if (card) {
                 const contentDiv = card.querySelector('.note-content-text');
                 if (contentDiv) {
