@@ -269,7 +269,8 @@
     }
 
     function injectFullscreenIcon(trigger, mode) {
-        if (trigger.querySelector('.textarea-fullscreen-btn')) return;
+        const container = mode === 'fields' ? trigger : trigger.parentElement;
+        if (!container || container.querySelector('.textarea-fullscreen-btn')) return;
         
         const btn = document.createElement('span');
         btn.className = 'textarea-fullscreen-btn';
@@ -282,16 +283,9 @@
             openOverlay(mode);
         };
         
-        if (mode === 'fields') {
-            trigger.style.display = 'inline-flex';
-            trigger.style.alignItems = 'center';
-            trigger.appendChild(btn);
-        } else {
-            // For notes, the trigger is the title element itself
-            trigger.parentElement.style.display = 'flex';
-            trigger.parentElement.style.alignItems = 'center';
-            trigger.parentElement.appendChild(btn);
-        }
+        container.style.display = mode === 'fields' ? 'inline-flex' : 'flex';
+        container.style.alignItems = 'center';
+        container.appendChild(btn);
     }
 
     // === EVENT LISTENERS ===
@@ -351,6 +345,7 @@
         }
     });
 
+    let scanTimeout;
     function scan() {
         const container = document.querySelector('#contact-details') || document.body;
         // Fields
@@ -366,7 +361,17 @@
         });
     }
 
-    const observer = new MutationObserver(() => scan());
+    function debouncedScan() {
+        clearTimeout(scanTimeout);
+        scanTimeout = setTimeout(scan, 200);
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        // Optimization: only scan if nodes were added
+        const nodesAdded = mutations.some(m => m.addedNodes.length > 0);
+        if (nodesAdded) debouncedScan();
+    });
+
     observer.observe(document.body, { childList: true, subtree: true });
     scan();
     setTimeout(scan, 1000);
