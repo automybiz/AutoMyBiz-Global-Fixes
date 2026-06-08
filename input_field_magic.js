@@ -7,7 +7,7 @@
     const GHL_BG = "#011";
     const GHL_BORDER = "#0FF";
     const GHL_TEXT = "#FFF";
-    const GHL_LABEL = "#9ca3af";
+    const GHL_LABEL = "#FFF";
 
     // === STYLES ===
     const style = document.createElement('style');
@@ -275,12 +275,11 @@
     }
 
     function injectFullscreenIcon(trigger, mode) {
-        const container = mode === 'fields' ? trigger : trigger.parentElement;
-        if (!container || container.querySelector('.textarea-fullscreen-btn')) return;
+        if (trigger.querySelector(".textarea-fullscreen-btn")) return;
         
-        const btn = document.createElement('span');
-        btn.className = 'textarea-fullscreen-btn';
-        btn.title = `Fullscreen ${mode === 'fields' ? 'All Fields' : 'All Notes'}`;
+        const btn = document.createElement("span");
+        btn.className = "textarea-fullscreen-btn";
+        btn.title = `Fullscreen ${mode === "fields" ? "All Fields" : "All Notes"}`;
         btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
         
         btn.onclick = (e) => {
@@ -289,9 +288,11 @@
             openOverlay(mode);
         };
         
-        container.style.display = mode === 'fields' ? 'inline-flex' : 'flex';
-        container.style.alignItems = 'center';
-        container.appendChild(btn);
+        // Use inline-flex on the trigger itself to avoid breaking parent layout
+        trigger.style.display = "inline-flex";
+        trigger.style.alignItems = "center";
+        trigger.style.maxWidth = "100%";
+        trigger.appendChild(btn);
     }
 
     // === EVENT LISTENERS ===
@@ -353,18 +354,19 @@
 
     let scanTimeout;
     function scan() {
-        const container = document.querySelector('#contact-details') || document.body;
-        // Fields
-        container.querySelectorAll('textarea').forEach(t => {
+        const container = document.querySelector("#contact-details") || document.body;
+        // Fields - only target textareas in form items
+        container.querySelectorAll(".hr-form-item textarea").forEach(t => {
             if (t.dataset.isInOverlay) return;
             setupTextarea(t);
-            const label = t.closest('.hr-form-item')?.querySelector(LABEL_SELECTOR);
-            if (label) injectFullscreenIcon(label, 'fields');
+            const label = t.closest(".hr-form-item")?.querySelector(LABEL_SELECTOR);
+            if (label) injectFullscreenIcon(label, "fields");
         });
-        // Notes
-        document.querySelectorAll(NOTE_TITLE_SELECTOR).forEach(title => {
-            injectFullscreenIcon(title, 'notes');
-        });
+        // Notes - only target the first note title to avoid cluttering and layout issues
+        const firstNoteTitle = document.querySelector(NOTE_TITLE_SELECTOR);
+        if (firstNoteTitle) {
+            injectFullscreenIcon(firstNoteTitle, "notes");
+        }
     }
 
     function debouncedScan() {
