@@ -60,12 +60,12 @@
         const OVERLAY_INPUT_BG = '#022';
         const OVERLAY_INPUT_BORDER = '#0FF';
         const OVERLAY_INPUT_TEXT = '#FFF';
-        const OVERLAY_LABEL = '#FFF';
+        const OVERLAY_INPUT_LABEL = '#FFF';
 
         const contentBox = document.createElement('div');
         contentBox.style.cssText = `
             width: 100%;
-            max-width: 600px;
+            max-width: 900px;
             display: flex;
             flex-direction: column;
             gap: 30px;
@@ -109,7 +109,7 @@
             const label = document.createElement('label');
             label.innerText = labelText;
             label.style.cssText = `
-                color: ${OVERLAY_LABEL};
+                color: ${OVERLAY_INPUT_LABEL};
                 font-size: 13px;
                 font-weight: 500;
                 margin-bottom: 4px;
