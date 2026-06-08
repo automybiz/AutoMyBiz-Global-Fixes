@@ -1,13 +1,13 @@
 (function() {
     // === CONFIGURATION ===
-    const LABEL_SELECTOR = '.hr-form-item-label__text';
-    const NOTE_TITLE_SELECTOR = '.note-card-content .font-semibold, .note-card-accent .font-semibold, #notes-list-container-contact .font-semibold';
+    const LABEL_SELECTOR = ".hr-form-item-label__text";
+    const NOTE_TITLE_SELECTOR = ".note-card-content .font-semibold, .note-card-accent .font-semibold, #notes-list-container-contact .font-semibold";
     const ALL_TRIGGERS = `${LABEL_SELECTOR}, ${NOTE_TITLE_SELECTOR}`;
     
-    const GHL_BG = '#111827';
-    const GHL_BORDER = '#374151';
-    const GHL_TEXT = '#f9fafb';
-    const GHL_LABEL = '#9ca3af';
+    const GHL_BG = "#011";
+    const GHL_BORDER = "#0FF";
+    const GHL_TEXT = "#FFF";
+    const GHL_LABEL = "#9ca3af";
 
     // === STYLES ===
     const style = document.createElement('style');
@@ -78,22 +78,22 @@
     let copiedTimeout = null;
 
     function applyTooltipColors() {
-        const sampleInput = document.querySelector('input, textarea, .hr-input-container');
+        const sampleInput = document.querySelector("input, textarea, .hr-input-container");
         if (sampleInput) {
             const computed = window.getComputedStyle(sampleInput);
             const bgColor = computed.backgroundColor;
-            tooltip.style.backgroundColor = (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') ? bgColor : '#011';
-            const borderColor = computed.borderColor && computed.borderColor !== 'transparent' ? computed.borderColor : '#0FF';
+            tooltip.style.backgroundColor = (bgColor && bgColor !== "transparent" && bgColor !== "rgba(0, 0, 0, 0)") ? bgColor : GHL_BG;
+            const borderColor = computed.borderColor && computed.borderColor !== "transparent" ? computed.borderColor : GHL_BORDER;
             tooltip.style.borderColor = borderColor;
-            tooltip.style.setProperty('--tooltip-accent', borderColor);
-            tooltip.style.borderStyle = 'solid';
-            tooltip.style.borderWidth = '1px';
-            tooltip.style.color = computed.color || '#FFF';
+            tooltip.style.setProperty("--tooltip-accent", borderColor);
+            tooltip.style.borderStyle = "solid";
+            tooltip.style.borderWidth = "1px";
+            tooltip.style.color = computed.color || GHL_TEXT;
         } else {
-            tooltip.style.backgroundColor = '#011';
-            tooltip.style.borderColor = '#0FF';
-            tooltip.style.setProperty('--tooltip-accent', '#0FF');
-            tooltip.style.color = '#FFF';
+            tooltip.style.backgroundColor = GHL_BG;
+            tooltip.style.borderColor = GHL_BORDER;
+            tooltip.style.setProperty("--tooltip-accent", GHL_BORDER);
+            tooltip.style.color = GHL_TEXT;
         }
     }
 
@@ -180,22 +180,22 @@
         if (e.key === 'Escape') closeOverlay();
     });
 
-    function openOverlay(mode = 'fields') {
+    function openOverlay(mode = "fields") {
         const overlay = createOverlay();
-        overlay.innerHTML = '';
+        overlay.innerHTML = "";
         
-        const contentBox = document.createElement('div');
+        const contentBox = document.createElement("div");
         contentBox.style.cssText = `
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
             display: flex;
             flex-direction: column;
             gap: 30px;
             padding: 40px;
-            background-color: #0b0f19;
-            border: 1px solid ${GHL_BORDER};
+            background-color: ${GHL_BG};
+            border: 2px solid ${GHL_BORDER};
             border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             margin-bottom: 50px;
         `;
 
@@ -228,28 +228,34 @@
     }
 
     function renderOverlayItem(origLabel, origDataEl, container, isNote = false) {
-        let labelText = 'Text Area';
+        let labelText = "Text Area";
         if (origLabel) {
             const clone = origLabel.cloneNode(true);
-            clone.querySelectorAll('.textarea-fullscreen-btn, svg, button').forEach(el => el.remove());
+            clone.querySelectorAll(".textarea-fullscreen-btn, svg, button").forEach(el => el.remove());
             labelText = clone.innerText.trim();
         }
 
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 10px; width: 100%;';
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = "display: flex; flex-direction: column; gap: 10px; width: 100%;";
         
-        const label = document.createElement('label');
-        label.className = LABEL_SELECTOR.replace('.', ''); // Ensure click-to-copy picks it up
+        const label = document.createElement("label");
+        label.className = LABEL_SELECTOR.replace(".", ""); // Ensure click-to-copy picks it up
         label.innerText = labelText;
-        label.style.cssText = `color: ${GHL_LABEL}; font-size: 13px; font-weight: 500; margin-bottom: 4px; display: block;`;
+        label.style.cssText = `color: ${GHL_TEXT}; font-size: 16px; font-weight: bold; margin-bottom: 4px; display: block;`;
 
-        const textarea = document.createElement('textarea');
-        textarea.dataset.isInOverlay = 'true';
+        const textarea = document.createElement("textarea");
+        textarea.dataset.isInOverlay = "true";
         textarea.value = isNote ? (origDataEl.innerText || origDataEl.textContent) : origDataEl.value;
-        textarea.style.cssText = `width: 100%; background-color: ${GHL_BG}; color: ${GHL_TEXT}; border: 1px solid ${GHL_BORDER}; border-radius: 8px; padding: 12px; font-size: 14px; line-height: 1.5; outline: none; min-height: 40px; transition: border-color 0.2s;`;
+        textarea.style.cssText = `width: 100%; background-color: #000; color: ${GHL_TEXT}; border: 1px solid ${GHL_BORDER}; border-radius: 8px; padding: 12px; font-size: 15px; line-height: 1.6; outline: none; min-height: 60px; transition: all 0.2s;`;
         
-        textarea.onfocus = () => { textarea.style.borderColor = '#1fb2a6'; };
-        textarea.onblur = () => { textarea.style.borderColor = GHL_BORDER; };
+        textarea.onfocus = () => { 
+            textarea.style.borderColor = GHL_BORDER;
+            textarea.style.boxShadow = `0 0 10px ${GHL_BORDER}`;
+        };
+        textarea.onblur = () => { 
+            textarea.style.borderColor = GHL_BORDER;
+            textarea.style.boxShadow = "none";
+        };
         
         textarea.oninput = () => {
             if (isNote) {
