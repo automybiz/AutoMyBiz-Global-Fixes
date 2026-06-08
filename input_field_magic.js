@@ -187,7 +187,7 @@
         const contentBox = document.createElement("div");
         contentBox.style.cssText = `
             width: 100%;
-            max-width: 800px;
+            max-width: 1000px;
             display: flex;
             flex-direction: column;
             gap: 30px;
@@ -248,25 +248,27 @@
         textarea.value = isNote ? (origDataEl.innerText || origDataEl.textContent) : origDataEl.value;
         textarea.style.cssText = `width: 100%; background-color: #000; color: ${GHL_TEXT}; border: 1px solid ${GHL_BORDER}; border-radius: 8px; padding: 12px; font-size: 15px; line-height: 1.6; outline: none; min-height: 60px; transition: all 0.2s;`;
         
-        textarea.onfocus = () => { 
-            textarea.style.borderColor = GHL_BORDER;
-            textarea.style.boxShadow = `0 0 10px ${GHL_BORDER}`;
-        };
-        textarea.onblur = () => { 
-            textarea.style.borderColor = GHL_BORDER;
-            textarea.style.boxShadow = "none";
-        };
-        
-        textarea.oninput = () => {
-            if (isNote) {
-                origDataEl.innerText = textarea.value;
-            } else {
+        if (isNote) {
+            textarea.readOnly = true;
+            textarea.style.cursor = "default";
+            textarea.style.opacity = "0.9";
+        } else {
+            textarea.onfocus = () => { 
+                textarea.style.borderColor = GHL_BORDER;
+                textarea.style.boxShadow = `0 0 10px ${GHL_BORDER}`;
+            };
+            textarea.onblur = () => { 
+                textarea.style.borderColor = GHL_BORDER;
+                textarea.style.boxShadow = "none";
+            };
+            
+            textarea.oninput = () => {
                 origDataEl.value = textarea.value;
                 origDataEl.dispatchEvent(new Event('input', { bubbles: true }));
                 autoResizeTextarea(origDataEl);
-            }
-            autoResizeTextarea(textarea);
-        };
+                autoResizeTextarea(textarea);
+            };
+        }
 
         wrapper.appendChild(label);
         wrapper.appendChild(textarea);
