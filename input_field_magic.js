@@ -2,6 +2,7 @@
     // === CONFIGURATION ===
     const LABEL_SELECTOR = ".hr-form-item-label__text";
     const NOTE_TITLE_SELECTOR = ".note-card-content .font-semibold, .note-card-accent .font-semibold, #notes-list-container-contact .font-semibold";
+    const FULLSCREEN_BTN_SELECTOR = ".textarea-fullscreen-btn";
     const ALL_TRIGGERS = `${LABEL_SELECTOR}, ${NOTE_TITLE_SELECTOR}`;
     
     const GHL_BG = "#011";
@@ -281,7 +282,7 @@
         
         const btn = document.createElement("span");
         btn.className = "textarea-fullscreen-btn";
-        btn.title = `Fullscreen ${mode === "fields" ? "All Fields" : "All Notes"}`;
+        btn.dataset.fullscreenMode = mode;
         btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
         
         btn.onclick = (e) => {
@@ -299,6 +300,14 @@
 
     // === EVENT LISTENERS ===
     document.addEventListener('mousemove', (e) => {
+        const fsBtn = e.target.closest(FULLSCREEN_BTN_SELECTOR);
+        if (fsBtn) {
+            const mode = fsBtn.dataset.fullscreenMode;
+            const text = mode === "fields" ? "Full Screen All Multi-Line Fields" : "Full Screen All Notes";
+            showTooltip(text, e.pageX, e.pageY);
+            return;
+        }
+
         const trigger = e.target.closest(ALL_TRIGGERS);
         if (trigger && !isOverInteractiveElement(e)) {
             if (isCopied) {
