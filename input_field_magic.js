@@ -64,8 +64,8 @@
             align-items: flex-start;
             padding: 60px 20px;
             overflow-y: auto;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
     `;
     document.head.appendChild(style);
