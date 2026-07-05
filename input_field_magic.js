@@ -83,13 +83,38 @@
         .hr-form-item [class*="placeholder"],
         .hr-form-item [class*="label"],
         #textarea-fullscreen-overlay textarea,
+        #textarea-fullscreen-overlay input,
         #textarea-fullscreen-overlay label {
             font-family: '${GHL_FONT}', ${GHL_FONT_FALLBACK} !important;
         }
 
-        /* Hide native placeholder to prevent double-placeholder look with GHL's custom labels */
-        textarea::placeholder, input::placeholder {
+        /* Hide native placeholder and any ghost dashes in empty fields */
+        textarea::placeholder, 
+        input::placeholder,
+        .hr-form-item input::placeholder,
+        .hr-form-item textarea::placeholder {
             opacity: 0 !important;
+            color: transparent !important;
+            -webkit-text-fill-color: transparent !important;
+            visibility: hidden !important;
+        }
+
+        /* Target GHL custom placeholder elements that might be showing dashes */
+        .hr-form-item [class*="placeholder"]:not(label),
+        .hr-form-item [class*="v-placeholder"]:not(label),
+        .hr-form-item .hr-input-placeholder {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+
+        /* Ensure focused fields or fields with actual text show up correctly */
+        .hr-form-item textarea, 
+        .hr-form-item input,
+        #textarea-fullscreen-overlay textarea,
+        #textarea-fullscreen-overlay input {
+            color: ${GHL_TEXT} !important;
+            opacity: 1 !important;
         }
     `;
     document.head.appendChild(style);
