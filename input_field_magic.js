@@ -13,6 +13,8 @@
     // === STYLES ===
     const style = document.createElement('style');
     style.textContent = `
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
         ${ALL_TRIGGERS} {
             cursor: pointer !important;
         }
@@ -66,6 +68,10 @@
             overflow-y: auto;
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
+        }
+        .hr-form-item textarea, 
+        #textarea-fullscreen-overlay textarea {
+            font-family: 'JetBrains Mono', monospace !important;
         }
     `;
     document.head.appendChild(style);
@@ -247,7 +253,7 @@
         const textarea = document.createElement("textarea");
         textarea.dataset.isInOverlay = "true";
         textarea.value = isNote ? (origDataEl.innerText || origDataEl.textContent) : origDataEl.value;
-        textarea.style.cssText = `width: 100%; background-color: #000; color: ${GHL_TEXT}; border: 1px solid ${GHL_BORDER}; border-radius: 8px; padding: 12px; font-size: 15px; line-height: 1.6; outline: none; min-height: 60px; transition: all 0.2s;`;
+        textarea.style.cssText = `font-family: 'JetBrains Mono', monospace; width: 100%; background-color: #000; color: ${GHL_TEXT}; border: 1px solid ${GHL_BORDER}; border-radius: 8px; padding: 12px; font-size: 15px; line-height: 1.6; outline: none; min-height: 60px; transition: all 0.2s;`;
         
         if (isNote) {
             textarea.readOnly = true;
