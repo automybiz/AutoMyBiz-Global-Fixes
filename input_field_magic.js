@@ -11,14 +11,17 @@
     const GHL_LABEL = "#FFF";
     
     // Check for font in URL, default to Arvo
-    // Options: "Arvo", "Bitter", "PT Serif", "JetBrains Mono", "Ubuntu Mono", "Anonymous Pro"
+    // Options: "Arvo", "Bitter", "PT Serif", "JetBrains Mono", "Ubuntu Mono", "Anonymous Pro", "Inconsolata"
     const urlParams = new URLSearchParams(window.location.search);
     const GHL_FONT = urlParams.get('font') || "Arvo"; 
+    
+    // Determine fallback category
+    const GHL_FONT_FALLBACK = (GHL_FONT.includes("Mono") || GHL_FONT.includes("Pro") || GHL_FONT === "Inconsolata") ? "monospace" : "serif";
 
     // === STYLES ===
     const style = document.createElement('style');
     style.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&family=Arvo:wght@400;700&family=Bitter:wght@400;700&family=JetBrains+Mono:wght@400;700&family=PT+Serif:wght@400;700&family=Ubuntu+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&family=Arvo:wght@400;700&family=Bitter:wght@400;700&family=Inconsolata:wght@400;700&family=JetBrains+Mono:wght@400;700&family=PT+Serif:wght@400;700&family=Ubuntu+Mono:wght@400;700&display=swap');
 
         ${ALL_TRIGGERS} {
             cursor: pointer !important;
@@ -75,8 +78,11 @@
             -webkit-backdrop-filter: blur(4px);
         }
         .hr-form-item textarea, 
-        #textarea-fullscreen-overlay textarea {
-            font-family: '${GHL_FONT}', serif !important;
+        .hr-form-item textarea::placeholder,
+        .hr-form-item [class*="placeholder"],
+        #textarea-fullscreen-overlay textarea,
+        #textarea-fullscreen-overlay textarea::placeholder {
+            font-family: '${GHL_FONT}', ${GHL_FONT_FALLBACK} !important;
         }
     `;
     document.head.appendChild(style);
@@ -258,7 +264,7 @@
         const textarea = document.createElement("textarea");
         textarea.dataset.isInOverlay = "true";
         textarea.value = isNote ? (origDataEl.innerText || origDataEl.textContent) : origDataEl.value;
-        textarea.style.cssText = `font-family: '${GHL_FONT}', serif; width: 100%; background-color: #000; color: ${GHL_TEXT}; border: 1px solid ${GHL_BORDER}; border-radius: 8px; padding: 12px; font-size: 15px; line-height: 1.6; outline: none; min-height: 60px; transition: all 0.2s;`;
+        textarea.style.cssText = `font-family: '${GHL_FONT}', ${GHL_FONT_FALLBACK}; width: 100%; background-color: #000; color: ${GHL_TEXT}; border: 1px solid ${GHL_BORDER}; border-radius: 8px; padding: 12px; font-size: 15px; line-height: 1.6; outline: none; min-height: 60px; transition: all 0.2s;`;
         
         if (isNote) {
             textarea.readOnly = true;
