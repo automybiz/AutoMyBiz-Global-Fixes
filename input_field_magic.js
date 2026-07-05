@@ -11,17 +11,17 @@
     const GHL_LABEL = "#FFF";
     
     // Check for font in URL, default to Arvo
-    // Options: "Arvo", "Bitter", "PT Serif", "JetBrains Mono", "Ubuntu Mono", "Anonymous Pro", "Inconsolata"
+    // Options: "Arvo", "Bitter", "PT Serif", "JetBrains Mono", "Ubuntu Mono", "Anonymous Pro"
     const urlParams = new URLSearchParams(window.location.search);
     const GHL_FONT = urlParams.get('font') || "Arvo"; 
     
     // Determine fallback category
-    const GHL_FONT_FALLBACK = (GHL_FONT.includes("Mono") || GHL_FONT.includes("Pro") || GHL_FONT === "Inconsolata") ? "monospace" : "serif";
+    const GHL_FONT_FALLBACK = (GHL_FONT.includes("Mono") || GHL_FONT.includes("Pro")) ? "monospace" : "serif";
 
     // === STYLES ===
     const style = document.createElement('style');
     style.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&family=Arvo:wght@400;700&family=Bitter:wght@400;700&family=Inconsolata:wght@400;700&family=JetBrains+Mono:wght@400;700&family=PT+Serif:wght@400;700&family=Ubuntu+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&family=Arvo:wght@400;700&family=Bitter:wght@400;700&family=JetBrains+Mono:wght@400;700&family=PT+Serif:wght@400;700&family=Ubuntu+Mono:wght@400;700&display=swap');
 
         ${ALL_TRIGGERS} {
             cursor: pointer !important;
@@ -78,11 +78,17 @@
             -webkit-backdrop-filter: blur(4px);
         }
         .hr-form-item textarea, 
-        .hr-form-item textarea::placeholder,
+        .hr-form-item label,
         .hr-form-item [class*="placeholder"],
+        .hr-form-item [class*="label"],
         #textarea-fullscreen-overlay textarea,
-        #textarea-fullscreen-overlay textarea::placeholder {
+        #textarea-fullscreen-overlay label {
             font-family: '${GHL_FONT}', ${GHL_FONT_FALLBACK} !important;
+        }
+
+        /* Hide native placeholder to prevent double-placeholder look with GHL's custom labels */
+        textarea::placeholder {
+            opacity: 0 !important;
         }
     `;
     document.head.appendChild(style);
