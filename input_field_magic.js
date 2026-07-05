@@ -415,12 +415,20 @@
     let scanTimeout;
     function scan() {
         const container = document.querySelector("#contact-details") || document.body;
-        // Fields - only target textareas in form items
-        container.querySelectorAll(".hr-form-item textarea").forEach(t => {
-            if (t.dataset.isInOverlay) return;
-            setupTextarea(t);
-            const label = t.closest(".hr-form-item")?.querySelector(LABEL_SELECTOR);
-            if (label) injectFullscreenIcon(label, "fields");
+        // Fields - target both textareas and inputs in form items
+        container.querySelectorAll(".hr-form-item textarea, .hr-form-item input").forEach(el => {
+            // Remove the problematic double-dash placeholder
+            if (el.getAttribute("placeholder") === "--") {
+                el.setAttribute("placeholder", "");
+            }
+
+            // Textarea specific logic (resizing and fullscreen icons)
+            if (el.tagName.toLowerCase() === "textarea") {
+                if (el.dataset.isInOverlay) return;
+                setupTextarea(el);
+                const label = el.closest(".hr-form-item")?.querySelector(LABEL_SELECTOR);
+                if (label) injectFullscreenIcon(label, "fields");
+            }
         });
         // Notes - only target the first note title to avoid cluttering and layout issues
         const firstNoteTitle = document.querySelector(NOTE_TITLE_SELECTOR);
