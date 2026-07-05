@@ -13,7 +13,7 @@
     // === STYLES ===
     const style = document.createElement('style');
     style.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap'); 
 
         ${ALL_TRIGGERS} {
             cursor: pointer !important;
