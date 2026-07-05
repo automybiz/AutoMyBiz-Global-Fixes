@@ -78,6 +78,7 @@
             -webkit-backdrop-filter: blur(4px);
         }
         .hr-form-item textarea, 
+        .hr-form-item input,
         .hr-form-item label,
         .hr-form-item [class*="placeholder"],
         .hr-form-item [class*="label"],
@@ -87,7 +88,7 @@
         }
 
         /* Hide native placeholder to prevent double-placeholder look with GHL's custom labels */
-        textarea::placeholder {
+        textarea::placeholder, input::placeholder {
             opacity: 0 !important;
         }
     `;
