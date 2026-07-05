@@ -10,10 +10,10 @@
     const GHL_TEXT = "#FFF";
     const GHL_LABEL = "#FFF";
     
-    // Check for font in URL, default to Arvo
+    // Check for font in URL
     // Options: "Arvo", "Bitter", "PT Serif", "JetBrains Mono", "Ubuntu Mono", "Anonymous Pro"
     const urlParams = new URLSearchParams(window.location.search);
-    const GHL_FONT = urlParams.get('font') || "Arvo"; 
+    const GHL_FONT = urlParams.get('font') || "Bitter"; 
     
     // Determine fallback category
     const GHL_FONT_FALLBACK = (GHL_FONT.includes("Mono") || GHL_FONT.includes("Pro")) ? "monospace" : "serif";
