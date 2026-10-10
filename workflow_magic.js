@@ -1,43 +1,37 @@
-// AutoMyBiz - HighLevel Workflow Canvas Grid Remover
+// AutoMyBiz - Workflow Iframe Grid Remover
 (function() {
-    var STYLE_ID = 'automybiz-workflow-grid-killer';
-
-    // 1. Inject the exact CSS rule that uBlock Origin uses
-    function injectGridKillerCSS() {
-        if (document.getElementById(STYLE_ID)) return;
+    function injectIntoWorkflowIframe() {
+        // 1. Select the iframe by its name or title
+        var iframe = document.querySelector('iframe[name="workflow-builder"]') || 
+                     document.querySelector('iframe[title="Workflow Builder"]');
         
-        var style = document.createElement('style');
-        style.id = STYLE_ID;
-        style.textContent = `
-            [data-test-id="canvas-background"],
-            svg.vue-flow__background,
-            .vue-flow__background,
-            pattern[id*="canvas-background"] {
-                display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-            }
-        `;
+        if (!iframe) return;
 
-        var target = document.head || document.documentElement;
-        if (target) {
-            target.appendChild(style);
+        try {
+            // 2. Attempt to access the internal iframe document
+            var frameDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+            
+            if (frameDoc) {
+                // 3. Inject the CSS into the iframe's <head>
+                var style = frameDoc.createElement('style');
+                style.textContent = `
+                    [data-test-id="canvas-background"],
+                    .vue-flow__background,
+                    pattern[id*="canvas-background"] {
+                        display: none !important;
+                    }
+                `;
+                frameDoc.head.appendChild(style);
+                console.log("⚡ [Workflow Magic] Successfully injected into workflow-builder iframe!");
+            }
+        } catch (err) {
+            // Log the browser security boundary
+            console.warn("🔒 [Workflow Magic] Browser blocked access to cross-origin iframe:", err.message);
         }
     }
 
-    // 2. Run immediately on script load
-    injectGridKillerCSS();
-
-    // 3. Ensure it runs across Vue SPA route changes (when switching between sub-accounts & workflows)
-    window.addEventListener('DOMContentLoaded', injectGridKillerCSS);
-    window.addEventListener('load', injectGridKillerCSS);
-
-    // 4. Safety observer in case HighLevel dynamically wipes <head> styles
-    var observer = new MutationObserver(function() {
-        if (!document.getElementById(STYLE_ID)) {
-            injectGridKillerCSS();
-        }
-    });
-
+    // Run on load and observe when the iframe is mounted
+    injectIntoWorkflowIframe();
+    var observer = new MutationObserver(injectIntoWorkflowIframe);
     observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
