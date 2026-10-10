@@ -1,18 +1,29 @@
 // AutoMyBiz - HighLevel Workflow Canvas Grid Remover
 (function() {
-    function deleteGridSvg() {
-        var svg = document.querySelector('[data-test-id="canvas-background"]') || 
-                  document.querySelector('.vue-flow__background') ||
-                  document.querySelector('svg.vue-flow__container');
-        if (svg) {
-            svg.remove(); // Physically deletes the SVG from the DOM
+    console.log("⚡ AutoMyBiz Workflow Magic Grid Remover Active!");
+
+    function eradicateGrid() {
+        // Target the pattern (from your Screenshot 3) and the background SVG (from Screenshot 1)
+        var elements = document.querySelectorAll('pattern[id*="canvas-background"], [data-test-id="canvas-background"], svg.vue-flow__background');
+        if (elements.length > 0) {
+            elements.forEach(function(el) {
+                el.remove();
+            });
         }
     }
 
-    // Run immediately
-    deleteGridSvg();
+    // 1. Run immediately on load
+    eradicateGrid();
 
-    // Catch dynamic canvas mounts when zooming, panning, or navigating tabs
-    var observer = new MutationObserver(deleteGridSvg);
+    // 2. Poll every 250ms for the first 4 seconds while Vue Flow mounts the canvas
+    var checkCount = 0;
+    var timer = setInterval(function() {
+        eradicateGrid();
+        checkCount++;
+        if (checkCount > 16) clearInterval(timer);
+    }, 250);
+
+    // 3. Keep watching for tab navigation (Builder <-> Execution logs) and zoom/pan
+    var observer = new MutationObserver(eradicateGrid);
     observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
