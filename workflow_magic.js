@@ -5,8 +5,10 @@
     function eradicateGrid() {
         // Target the pattern (from your Screenshot 3) and the background SVG (from Screenshot 1)
         var elements = document.querySelectorAll('pattern[id*="canvas-background"], [data-test-id="canvas-background"], svg.vue-flow__background');
+        console.log(elements);
         if (elements.length > 0) {
             elements.forEach(function(el) {
+                console.log(el);
                 el.remove();
             });
         }
